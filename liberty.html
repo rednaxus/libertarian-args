@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Positive &amp; Negative Liberty</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --violet: #9b5de5;
+      --blue:   #4895ef;
+      --dark:   #0e0f1e;
+      --mid:    #141528;
+      --card:   #1c1d35;
+      --text:   #e8e8f4;
+      --muted:  #7878a8;
+      --red:    #e05c3a;
+      --green:  #4caf82;
+      --gold:   #e8c547;
+    }
+
+    body {
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'Georgia', serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #deck { flex: 1; position: relative; overflow: hidden; }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 52px 80px;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity .4s ease, transform .4s ease;
+      pointer-events: none;
+    }
+    .slide.active  { opacity: 1; transform: translateX(0); pointer-events: auto; }
+    .slide.exit    { opacity: 0; transform: translateX(-60px); }
+
+    .art { position: absolute; pointer-events: none; z-index: 0; }
+    .art svg { width: 100%; height: 100%; }
+    .slide > *:not(.art) { position: relative; z-index: 1; }
+
+    /* ── title ── */
+    .slide-title {
+      background: radial-gradient(ellipse at 35% 45%, #16103a 0%, var(--dark) 68%);
+      text-align: center;
+    }
+    .eyebrow {
+      font-family: 'Arial', sans-serif;
+      font-size: 0.74rem;
+      letter-spacing: .28em;
+      text-transform: uppercase;
+      color: var(--violet);
+      margin-bottom: 22px;
+    }
+    .slide-title h1 {
+      font-size: clamp(2.2rem, 4.5vw, 3.8rem);
+      line-height: 1.1;
+      color: #fff;
+      max-width: 820px;
+    }
+    .slide-title h1 .neg { color: var(--blue); }
+    .slide-title h1 .pos { color: var(--violet); }
+    .subtitle {
+      margin-top: 26px;
+      font-size: 1.05rem;
+      color: var(--muted);
+      font-style: italic;
+      max-width: 620px;
+    }
+    .divider {
+      width: 56px; height: 3px;
+      background: linear-gradient(90deg, var(--blue), var(--violet));
+      margin: 26px auto;
+      border-radius: 2px;
+    }
+
+    /* ── section ── */
+    .slide-section { background: var(--mid); }
+    .section-tag {
+      font-family: 'Arial', sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--violet);
+      margin-bottom: 14px;
+      align-self: flex-start;
+    }
+    .slide-section h2 {
+      font-size: clamp(1.5rem, 2.8vw, 2.4rem);
+      color: #fff;
+      align-self: flex-start;
+      line-height: 1.2;
+      margin-bottom: 34px;
+    }
+    .cards { display: grid; gap: 14px; width: 100%; }
+    .cards.cols-2 { grid-template-columns: 1fr 1fr; }
+    .cards.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 20px 24px;
+      border-top: 3px solid var(--violet);
+    }
+    .card.blue  { border-top-color: var(--blue); }
+    .card.red   { border-top-color: var(--red); }
+    .card.green { border-top-color: var(--green); }
+    .card.gold  { border-top-color: var(--gold); }
+    .card h3 {
+      font-size: 0.9rem;
+      font-family: 'Arial', sans-serif;
+      font-weight: 700;
+      letter-spacing: .04em;
+      margin-bottom: 9px;
+      color: #fff;
+    }
+    .card p { font-size: 0.85rem; line-height: 1.65; color: var(--muted); }
+    .card p em { color: #ccc; font-style: italic; }
+    .card p strong { color: var(--text); }
+
+    /* ── berlin / thinker slide ── */
+    .slide-thinker {
+      background: var(--mid);
+      flex-direction: row;
+      gap: 70px;
+      align-items: center;
+    }
+    .thinker-text { flex: 1; }
+    .thinker-text .section-tag { margin-bottom: 10px; }
+    .thinker-text h2 { font-size: clamp(1.6rem, 3vw, 2.8rem); color: #fff; line-height: 1.15; margin-bottom: 8px; }
+    .thinker-text .dates { font-family: 'Arial', sans-serif; font-size: 0.8rem; color: var(--muted); margin-bottom: 28px; }
+    .thinker-text p { font-size: 0.92rem; line-height: 1.7; color: var(--muted); margin-bottom: 14px; }
+    .thinker-text p em { color: #ccc; font-style: italic; }
+    .thinker-text p strong { color: var(--text); }
+    .thinker-portrait { flex-shrink: 0; width: 200px; height: 240px; }
+    .thinker-portrait svg { width: 100%; height: 100%; }
+
+    /* ── concept slides (neg / pos liberty) ── */
+    .slide-concept {
+      background: var(--mid);
+      flex-direction: row;
+      gap: 60px;
+      align-items: flex-start;
+      padding-top: 70px;
+      padding-bottom: 70px;
+    }
+    .concept-left { flex: 1; display: flex; flex-direction: column; }
+    .concept-left .section-tag { margin-bottom: 10px; }
+    .concept-left h2 { font-size: clamp(1.6rem, 3vw, 2.8rem); color: #fff; line-height: 1.15; margin-bottom: 6px; }
+    .concept-def {
+      font-size: 0.92rem;
+      line-height: 1.7;
+      color: var(--muted);
+      margin-bottom: 24px;
+      font-style: italic;
+      border-left: 3px solid var(--blue);
+      padding-left: 16px;
+    }
+    .concept-def.pos { border-left-color: var(--violet); }
+    .concept-points { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .concept-points li {
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: var(--muted);
+      padding-left: 18px;
+      position: relative;
+    }
+    .concept-points li::before {
+      content: '—';
+      position: absolute;
+      left: 0;
+      color: var(--blue);
+    }
+    .concept-points li.pos::before { color: var(--violet); }
+    .concept-points li strong { color: var(--text); }
+    .concept-art { flex-shrink: 0; width: 220px; height: 280px; }
+    .concept-art svg { width: 100%; height: 100%; }
+
+    /* ── quote ── */
+    .slide-quote {
+      background: linear-gradient(135deg, #0e0f1e 0%, #14142e 100%);
+      flex-direction: row;
+      gap: 60px;
+      align-items: center;
+      justify-content: center;
+    }
+    .quote-body { flex: 1; max-width: 620px; }
+    blockquote {
+      font-size: clamp(1rem, 1.8vw, 1.4rem);
+      line-height: 1.75;
+      color: #d4d4f0;
+      font-style: italic;
+      position: relative;
+      padding-left: 8px;
+    }
+    blockquote::before {
+      content: '\201C';
+      font-size: 5.5rem;
+      color: var(--violet);
+      opacity: .18;
+      position: absolute;
+      top: -24px; left: -14px;
+      line-height: 1;
+    }
+    .quote-source {
+      margin-top: 22px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-style: normal;
+      font-family: 'Arial', sans-serif;
+      letter-spacing: .1em;
+    }
+    .quote-art { flex-shrink: 0; width: 175px; height: 175px; opacity: 0.6; }
+    .quote-art svg { width: 100%; height: 100%; }
+
+    /* ── comparison table ── */
+    .slide-compare { background: var(--mid); }
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+    .compare-table th {
+      padding: 12px 18px;
+      font-family: 'Arial', sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .compare-table th.neg-head { background: rgba(72,149,239,.15); color: var(--blue);   text-align: center; }
+    .compare-table th.pos-head { background: rgba(155,93,229,.15); color: var(--violet); text-align: center; }
+    .compare-table th.dim-head { background: #1c1d35; color: var(--muted); text-align: left; width: 22%; }
+    .compare-table td { padding: 11px 18px; border-bottom: 1px solid #1c1d35; vertical-align: top; line-height: 1.5; }
+    .compare-table td.dim  { color: var(--muted); font-family: 'Arial', sans-serif; font-size: 0.75rem; letter-spacing: .06em; text-transform: uppercase; background: #1a1b32; }
+    .compare-table td.neg  { color: #aac8f8; background: rgba(72,149,239,.06); text-align: center; }
+    .compare-table td.pos  { color: #caaff8; background: rgba(155,93,229,.06); text-align: center; }
+    .compare-table tr:last-child td { border-bottom: none; }
+
+    /* ── closing ── */
+    .slide-close {
+      background: radial-gradient(ellipse at 55% 50%, #160f30 0%, var(--dark) 68%);
+      text-align: center;
+    }
+    .slide-close h2 { font-size: clamp(1.6rem, 3vw, 2.6rem); color: #fff; margin-bottom: 18px; }
+    .slide-close p  { max-width: 680px; font-size: 1rem; line-height: 1.8; color: var(--muted); }
+    .pill-row { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; justify-content: center; }
+    .pill {
+      border: 1.5px solid;
+      border-radius: 999px;
+      padding: 7px 20px;
+      font-size: 0.8rem;
+      font-family: 'Arial', sans-serif;
+      letter-spacing: .06em;
+    }
+    .pill.neg { border-color: var(--blue);   color: var(--blue); }
+    .pill.pos { border-color: var(--violet); color: var(--violet); }
+    .pill.both { border-color: var(--green); color: var(--green); }
+
+    /* ── nav ── */
+    #nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 16px 40px;
+      background: var(--mid);
+      border-top: 1px solid #1e1f38;
+    }
+    #nav button {
+      background: none;
+      border: 1.5px solid #2e2f52;
+      color: var(--text);
+      padding: 7px 26px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-family: 'Arial', sans-serif;
+      transition: border-color .2s, color .2s;
+    }
+    #nav button:hover:not(:disabled) { border-color: var(--violet); color: var(--violet); }
+    #nav button:disabled { opacity: .3; cursor: default; }
+    #counter { font-family:'Arial',sans-serif; font-size:0.75rem; color:var(--muted); min-width:60px; text-align:center; }
+    .dot-row { display:flex; gap:6px; }
+    .dot { width:6px; height:6px; border-radius:50%; background:#2e2f52; transition:background .3s; }
+    .dot.on { background: var(--violet); }
+  </style>
+</head>
+<body>
+<div id="deck">
+
+  <!-- ══════════════════════════════════════════
+       1 · TITLE
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-title active">
+
+    <!-- Left: chain breaking (negative) / Right: figure ascending (positive) -->
+    <div class="art" style="right:60px;top:50%;transform:translateY(-50%);width:260px;height:300px;opacity:0.3;">
+      <svg viewBox="0 0 100 120" fill="none">
+        <!-- dividing line -->
+        <line x1="50" y1="5" x2="50" y2="115" stroke="#3a3a6a" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+        <!-- LEFT: chain breaking (negative liberty = freedom FROM) -->
+        <!-- chain links -->
+        <ellipse cx="20" cy="35" rx="10" ry="6" stroke="#4895ef" stroke-width="2" transform="rotate(-20 20 35)"/>
+        <ellipse cx="32" cy="42" rx="10" ry="6" stroke="#4895ef" stroke-width="2" transform="rotate(20 32 42)"/>
+        <!-- break mark -->
+        <line x1="37" y1="52" x2="43" y2="44" stroke="#4895ef" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="43" y1="52" x2="37" y2="44" stroke="#4895ef" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- drifting half -->
+        <ellipse cx="22" cy="60" rx="10" ry="6" stroke="#4895ef" stroke-width="2" transform="rotate(-20 22 60)" opacity="0.4"/>
+        <!-- label -->
+        <text x="25" y="80" text-anchor="middle" fill="#4895ef" font-family="Arial" font-size="6.5" font-weight="bold">FREEDOM FROM</text>
+        <text x="25" y="89" text-anchor="middle" fill="#4895ef" font-family="Arial" font-size="5.5" opacity="0.7">interference</text>
+
+        <!-- RIGHT: figure ascending steps (positive liberty = freedom TO) -->
+        <!-- steps -->
+        <line x1="60" y1="90" x2="90" y2="90" stroke="#9b5de5" stroke-width="2"/>
+        <line x1="65" y1="78" x2="90" y2="78" stroke="#9b5de5" stroke-width="2"/>
+        <line x1="70" y1="66" x2="90" y2="66" stroke="#9b5de5" stroke-width="2"/>
+        <line x1="60" y1="90" x2="60" y2="78" stroke="#9b5de5" stroke-width="1.5"/>
+        <line x1="65" y1="78" x2="65" y2="66" stroke="#9b5de5" stroke-width="1.5"/>
+        <line x1="70" y1="66" x2="70" y2="54" stroke="#9b5de5" stroke-width="1.5"/>
+        <!-- figure climbing -->
+        <circle cx="76" cy="57" r="5.5" stroke="#9b5de5" stroke-width="2"/>
+        <line x1="76" y1="62" x2="76" y2="72" stroke="#9b5de5" stroke-width="2"/>
+        <line x1="70" y1="67" x2="82" y2="67" stroke="#9b5de5" stroke-width="2"/>
+        <line x1="76" y1="72" x2="70" y2="82" stroke="#9b5de5" stroke-width="2"/>
+        <line x1="76" y1="72" x2="82" y2="82" stroke="#9b5de5" stroke-width="2"/>
+        <!-- label -->
+        <text x="75" y="100" text-anchor="middle" fill="#9b5de5" font-family="Arial" font-size="6.5" font-weight="bold">FREEDOM TO</text>
+        <text x="75" y="109" text-anchor="middle" fill="#9b5de5" font-family="Arial" font-size="5.5" opacity="0.7">achieve &amp; become</text>
+      </svg>
+    </div>
+
+    <p class="eyebrow">Political Philosophy</p>
+    <h1><span class="neg">Negative</span> &amp; <span class="pos">Positive</span> Liberty</h1>
+    <div class="divider"></div>
+    <p class="subtitle">Isaiah Berlin's two concepts of freedom — and why the distinction shapes every debate in political philosophy</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       2 · THE QUESTION
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- two diverging paths watermark -->
+    <div class="art" style="left:50%;top:50%;transform:translate(-50%,-50%);width:480px;height:480px;opacity:0.05;">
+      <svg viewBox="0 0 100 100" fill="none">
+        <line x1="50" y1="90" x2="50" y2="50" stroke="#9b5de5" stroke-width="2"/>
+        <path d="M50,50 Q35,30 10,20" stroke="#4895ef" stroke-width="2" fill="none"/>
+        <path d="M50,50 Q65,30 90,20" stroke="#9b5de5" stroke-width="2" fill="none"/>
+        <circle cx="50" cy="50" r="4" fill="#e8c547" stroke="none"/>
+        <circle cx="10" cy="20" r="5" fill="#4895ef" stroke="none"/>
+        <circle cx="90" cy="20" r="5" fill="#9b5de5" stroke="none"/>
+        <text x="10" y="13" text-anchor="middle" fill="#4895ef" font-size="7" font-family="Arial">−</text>
+        <text x="90" y="13" text-anchor="middle" fill="#9b5de5" font-size="7" font-family="Arial">+</text>
+      </svg>
+    </div>
+
+    <p class="section-tag">The Central Question</p>
+    <h2>What Does It Mean to Be Free?</h2>
+    <div class="cards cols-2">
+      <div class="card blue">
+        <h3>The Puzzle</h3>
+        <p>A prisoner is released. A serf is emancipated. Are they now free? In one sense, yes — no one is physically restraining them. But if they have no money, no education, and nowhere to go, are they <em>really</em> free?</p>
+      </div>
+      <div class="card">
+        <h3>One Word, Two Concepts</h3>
+        <p>The word <em>"freedom"</em> is doing two very different jobs. These are not just shades of meaning — they rest on <strong>different moral foundations</strong> and lead to radically different political conclusions.</p>
+      </div>
+      <div class="card">
+        <h3>Why It Matters</h3>
+        <p>How you answer the question determines whether you think taxation is tyranny or enablement, whether markets liberate or trap, and what obligations a state has to its citizens.</p>
+      </div>
+      <div class="card blue">
+        <h3>A Permanent Tension</h3>
+        <p>Maximizing one kind of liberty can reduce the other. The tension between them is not a mistake to be resolved — it is the <strong>central conflict of liberal political thought</strong>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       3 · ISAIAH BERLIN
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-thinker">
+
+    <!-- subtle radial behind portrait -->
+    <div class="art" style="right:0;top:0;bottom:0;width:400px;opacity:0.06;">
+      <svg viewBox="0 0 100 100" fill="none">
+        <circle cx="50" cy="50" r="48" stroke="#9b5de5" stroke-width="1"/>
+        <circle cx="50" cy="50" r="35" stroke="#9b5de5" stroke-width="0.8" stroke-dasharray="4,3"/>
+        <circle cx="50" cy="50" r="20" stroke="#9b5de5" stroke-width="0.6" stroke-dasharray="2,4"/>
+      </svg>
+    </div>
+
+    <div class="thinker-text">
+      <p class="section-tag">Key Thinker</p>
+      <h2>Isaiah Berlin</h2>
+      <p class="dates">1909 – 1997 · Oxford philosopher, historian of ideas</p>
+      <p>In 1958, Berlin delivered his inaugural lecture as Chichele Professor of Social and Political Theory at Oxford. Published as <em>"Two Concepts of Liberty,"</em> it became the most cited essay in twentieth-century political philosophy.</p>
+      <p>Berlin argued that liberalism had conflated two distinct and sometimes opposing ideas under the same word — and that failing to keep them apart had led, and would continue to lead, to serious political mistakes, including justifications for <strong>authoritarian rule in freedom's name</strong>.</p>
+      <p>His distinction crystallized a debate that had been implicit in political philosophy since Rousseau, Kant, and Mill — and it continues to structure arguments about the role of the state to this day.</p>
+    </div>
+
+    <!-- stylized portrait -->
+    <div class="thinker-portrait">
+      <svg viewBox="0 0 80 100" fill="none">
+        <!-- silhouette head/shoulders -->
+        <ellipse cx="40" cy="30" rx="22" ry="26" fill="#1c1d35" stroke="#9b5de5" stroke-width="1.5"/>
+        <!-- glasses -->
+        <circle cx="32" cy="30" r="7" stroke="#9b5de5" stroke-width="1.5" fill="none"/>
+        <circle cx="48" cy="30" r="7" stroke="#9b5de5" stroke-width="1.5" fill="none"/>
+        <line x1="39" y1="30" x2="41" y2="30" stroke="#9b5de5" stroke-width="1.5"/>
+        <line x1="25" y1="30" x2="22" y2="29" stroke="#9b5de5" stroke-width="1.5"/>
+        <line x1="55" y1="30" x2="58" y2="29" stroke="#9b5de5" stroke-width="1.5"/>
+        <!-- shoulders / jacket -->
+        <path d="M8,100 Q8,66 20,62 L40,58 L60,62 Q72,66 72,100" fill="#1c1d35" stroke="#9b5de5" stroke-width="1.5"/>
+        <!-- tie -->
+        <path d="M40,58 L36,72 L40,78 L44,72 Z" stroke="#9b5de5" stroke-width="1" fill="none"/>
+        <!-- book under arm -->
+        <rect x="56" y="70" width="16" height="22" rx="1" stroke="#4895ef" stroke-width="1.5" fill="none"/>
+        <line x1="56" y1="74" x2="72" y2="74" stroke="#4895ef" stroke-width="1"/>
+        <text x="64" y="84" text-anchor="middle" fill="#4895ef" font-family="Georgia" font-size="4" font-style="italic">Two</text>
+        <text x="64" y="89" text-anchor="middle" fill="#4895ef" font-family="Georgia" font-size="4" font-style="italic">Concepts</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       4 · NEGATIVE LIBERTY
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-concept">
+
+    <div class="art" style="left:50%;top:50%;transform:translate(-50%,-50%);width:500px;height:500px;opacity:0.04;">
+      <svg viewBox="0 0 100 100" fill="none" stroke="#4895ef">
+        <!-- open gate / no barrier -->
+        <rect x="10" y="20" width="80" height="60" rx="3" stroke-width="1.5"/>
+        <!-- open door in the middle -->
+        <line x1="10" y1="20" x2="10" y2="80" stroke-width="2"/>
+        <line x1="90" y1="20" x2="90" y2="80" stroke-width="2"/>
+        <!-- gate posts -->
+        <line x1="42" y1="20" x2="42" y2="80" stroke-width="1.5"/>
+        <!-- right side swung open -->
+        <path d="M42,50 Q75,35 90,50" stroke-width="1.5" fill="none" stroke-dasharray="3,2"/>
+        <!-- path through open gate -->
+        <line x1="50" y1="80" x2="50" y2="100" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="50" cy="75" r="3" fill="#4895ef" stroke="none"/>
+      </svg>
+    </div>
+
+    <div class="concept-left">
+      <p class="section-tag" style="color:var(--blue);">Negative Liberty</p>
+      <h2 style="color:var(--blue);">Freedom <em>From</em></h2>
+      <p class="concept-def">
+        "You are free to the extent that no human being interferes with your activity."
+        <br/>— Isaiah Berlin
+      </p>
+      <ul class="concept-points">
+        <li><strong>The question it answers:</strong> What area can I act in without being obstructed by others?</li>
+        <li><strong>What counts as a constraint:</strong> Only deliberate human interference — not poverty, illness, or lack of talent.</li>
+        <li><strong>The state as threat:</strong> Government coercion is the paradigm case of unfreedom; the state must justify every restriction.</li>
+        <li><strong>The tradition:</strong> Hobbes, Locke, J.S. Mill, Adam Smith, Hayek — the classical liberal lineage.</li>
+        <li><strong>Rights it grounds:</strong> Property rights, free speech, freedom of contract, protection from arbitrary arrest.</li>
+        <li><strong>The ideal:</strong> A sphere of non-interference — a private realm no authority may enter without justification.</li>
+      </ul>
+    </div>
+
+    <!-- open gate illustration -->
+    <div class="concept-art">
+      <svg viewBox="0 0 80 110" fill="none">
+        <!-- gate posts -->
+        <rect x="2"  y="15" width="8" height="80" rx="1" stroke="#4895ef" stroke-width="2" fill="#1c1d35"/>
+        <rect x="70" y="15" width="8" height="80" rx="1" stroke="#4895ef" stroke-width="2" fill="#1c1d35"/>
+        <!-- left gate (closed) -->
+        <rect x="10" y="20" width="24" height="60" rx="1" stroke="#4895ef" stroke-width="1.5" fill="none"/>
+        <line x1="18" y1="20" x2="18" y2="80" stroke="#4895ef" stroke-width="1"/>
+        <line x1="26" y1="20" x2="26" y2="80" stroke="#4895ef" stroke-width="1"/>
+        <circle cx="33" cy="50" r="3" stroke="#4895ef" stroke-width="1.5" fill="none"/>
+        <!-- right gate (swung open outward) -->
+        <path d="M46,20 Q66,22 70,50 Q66,78 46,80" stroke="#4895ef" stroke-width="1.5" fill="none" stroke-dasharray="4,2"/>
+        <!-- open path through -->
+        <line x1="40" y1="85" x2="40" y2="108" stroke="#4895ef" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- freedom arrow -->
+        <polyline points="35,100 40,108 45,100" stroke="#4895ef" stroke-width="2" fill="none"/>
+        <!-- NO barrier text -->
+        <text x="40" y="12" text-anchor="middle" fill="#4895ef" font-family="Arial" font-size="6" letter-spacing="1">NO INTERFERENCE</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       5 · POSITIVE LIBERTY
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-concept">
+
+    <div class="art" style="left:50%;top:50%;transform:translate(-50%,-50%);width:500px;height:500px;opacity:0.04;">
+      <svg viewBox="0 0 100 100" fill="none" stroke="#9b5de5">
+        <!-- ascending steps -->
+        <line x1="10" y1="80" x2="40" y2="80" stroke-width="2"/>
+        <line x1="30" y1="65" x2="60" y2="65" stroke-width="2"/>
+        <line x1="50" y1="50" x2="80" y2="50" stroke-width="2"/>
+        <line x1="70" y1="35" x2="100" y2="35" stroke-width="2"/>
+        <line x1="10" y1="80" x2="10" y2="65" stroke-width="1.5"/>
+        <line x1="30" y1="65" x2="30" y2="50" stroke-width="1.5"/>
+        <line x1="50" y1="50" x2="50" y2="35" stroke-width="1.5"/>
+        <!-- figure at top -->
+        <circle cx="85" cy="27" r="6" stroke-width="1.5"/>
+        <path d="M80,30 Q75,20 80,10 Q90,8 95,15" stroke-width="1.5" fill="none"/>
+      </svg>
+    </div>
+
+    <div class="concept-left">
+      <p class="section-tag">Positive Liberty</p>
+      <h2 style="color:var(--violet);">Freedom <em>To</em></h2>
+      <p class="concept-def pos">
+        "The freedom which consists in being one's own master" — the capacity to act on one's own purposes and realize one's potential.
+        <br/>— Isaiah Berlin
+      </p>
+      <ul class="concept-points">
+        <li class="pos"><strong>The question it answers:</strong> Am I actually able to control my own life and pursue meaningful goals?</li>
+        <li class="pos"><strong>What counts as a constraint:</strong> Internal barriers (ignorance, addiction, false consciousness) and external conditions (poverty, discrimination) alike.</li>
+        <li class="pos"><strong>The state as enabler:</strong> Government can expand freedom by providing education, healthcare, and opportunity.</li>
+        <li class="pos"><strong>The tradition:</strong> Rousseau, Kant, Hegel, T.H. Green, Marx — the positive and communitarian lineage.</li>
+        <li class="pos"><strong>Rights it grounds:</strong> Rights to education, healthcare, basic income — conditions for genuine self-determination.</li>
+        <li class="pos"><strong>The ideal:</strong> Self-mastery — being governed by one's own reason rather than by external forces or internal compulsion.</li>
+      </ul>
+    </div>
+
+    <!-- ascending figure illustration -->
+    <div class="concept-art">
+      <svg viewBox="0 0 80 110" fill="none">
+        <!-- steps -->
+        <line x1="4"  y1="95" x2="34" y2="95" stroke="#9b5de5" stroke-width="2.5"/>
+        <line x1="18" y1="78" x2="52" y2="78" stroke="#9b5de5" stroke-width="2.5"/>
+        <line x1="34" y1="61" x2="68" y2="61" stroke="#9b5de5" stroke-width="2.5"/>
+        <line x1="50" y1="44" x2="78" y2="44" stroke="#9b5de5" stroke-width="2.5"/>
+        <line x1="4"  y1="95" x2="4"  y2="78" stroke="#9b5de5" stroke-width="1.5"/>
+        <line x1="18" y1="78" x2="18" y2="61" stroke="#9b5de5" stroke-width="1.5"/>
+        <line x1="34" y1="61" x2="34" y2="44" stroke="#9b5de5" stroke-width="1.5"/>
+        <line x1="50" y1="44" x2="50" y2="27" stroke="#9b5de5" stroke-width="1.5"/>
+        <!-- figure climbing -->
+        <circle cx="62" cy="33" r="7" stroke="#9b5de5" stroke-width="2"/>
+        <line x1="62" y1="40" x2="62" y2="56" stroke="#9b5de5" stroke-width="2"/>
+        <line x1="54" y1="47" x2="70" y2="47" stroke="#9b5de5" stroke-width="2"/>
+        <line x1="62" y1="56" x2="55" y2="68" stroke="#9b5de5" stroke-width="2"/>
+        <line x1="62" y1="56" x2="69" y2="68" stroke="#9b5de5" stroke-width="2"/>
+        <!-- star / goal at top -->
+        <path d="M62,8 L64,14 L70,14 L65,18 L67,24 L62,20 L57,24 L59,18 L54,14 L60,14 Z" stroke="#e8c547" stroke-width="1.5" fill="none"/>
+        <!-- upward arrow -->
+        <line x1="62" y1="26" x2="62" y2="22" stroke="#9b5de5" stroke-width="1.5" stroke-dasharray="2,2"/>
+        <text x="40" y="108" text-anchor="middle" fill="#9b5de5" font-family="Arial" font-size="6" letter-spacing="1">SELF-MASTERY</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       6 · BERLIN QUOTE
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-quote">
+    <div class="quote-body">
+      <blockquote>
+        The freedom which consists in being one's own master, and the freedom which consists in not being interfered with by others, are not the same thing. The connexion between them is at best indirect.
+      </blockquote>
+      <p class="quote-source">— Isaiah Berlin, "Two Concepts of Liberty," 1958</p>
+    </div>
+    <!-- two arrows diverging from one point -->
+    <div class="quote-art">
+      <svg viewBox="0 0 100 100" fill="none">
+        <!-- origin point -->
+        <circle cx="50" cy="72" r="5" fill="#e8c547" stroke="none"/>
+        <!-- negative arrow -->
+        <line x1="50" y1="72" x2="14" y2="22" stroke="#4895ef" stroke-width="2.5" stroke-linecap="round"/>
+        <polyline points="8,30 14,20 22,28" stroke="#4895ef" stroke-width="2" fill="none"/>
+        <text x="10" y="14" text-anchor="middle" fill="#4895ef" font-family="Arial" font-size="7" font-weight="bold">−</text>
+        <!-- positive arrow -->
+        <line x1="50" y1="72" x2="86" y2="22" stroke="#9b5de5" stroke-width="2.5" stroke-linecap="round"/>
+        <polyline points="78,28 86,20 92,30" stroke="#9b5de5" stroke-width="2" fill="none"/>
+        <text x="90" y="14" text-anchor="middle" fill="#9b5de5" font-family="Arial" font-size="7" font-weight="bold">+</text>
+        <!-- NOT the same label -->
+        <text x="50" y="88" text-anchor="middle" fill="#e8c547" font-family="Georgia" font-size="6" font-style="italic">not the same thing</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       7 · SIDE-BY-SIDE COMPARISON
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-compare">
+    <p class="section-tag">Comparison</p>
+    <h2 style="align-self:flex-start;color:#fff;font-size:clamp(1.4rem,2.5vw,2.2rem);margin-bottom:22px;">Two Concepts, Head to Head</h2>
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th class="dim-head"></th>
+          <th class="neg-head">— Negative Liberty</th>
+          <th class="pos-head">+ Positive Liberty</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="dim">Core question</td>
+          <td class="neg">What am I free <em>from</em>?</td>
+          <td class="pos">What am I free <em>to do or be</em>?</td>
+        </tr>
+        <tr>
+          <td class="dim">What constrains</td>
+          <td class="neg">Deliberate interference by others</td>
+          <td class="pos">Internal barriers + external conditions</td>
+        </tr>
+        <tr>
+          <td class="dim">Role of the state</td>
+          <td class="neg">Primary threat — must stay small</td>
+          <td class="pos">Potential enabler — can expand freedom</td>
+        </tr>
+        <tr>
+          <td class="dim">Key thinkers</td>
+          <td class="neg">Hobbes · Locke · Mill · Hayek</td>
+          <td class="pos">Rousseau · Hegel · Marx · T.H. Green</td>
+        </tr>
+        <tr>
+          <td class="dim">Rights it grounds</td>
+          <td class="neg">Property · speech · contract</td>
+          <td class="pos">Education · healthcare · basic income</td>
+        </tr>
+        <tr>
+          <td class="dim">Chief danger</td>
+          <td class="neg">Hollow freedom — formally free, actually trapped</td>
+          <td class="pos">Paternalism — coercing people "for their freedom"</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       8 · WHERE THEY CONFLICT
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- grinding gears watermark -->
+    <div class="art" style="right:-50px;top:50%;transform:translateY(-50%);width:380px;height:380px;opacity:0.06;">
+      <svg viewBox="0 0 100 100" fill="none">
+        <!-- gear 1 (negative) -->
+        <circle cx="35" cy="50" r="22" stroke="#4895ef" stroke-width="2"/>
+        <circle cx="35" cy="50" r="14" stroke="#4895ef" stroke-width="1.5"/>
+        <line x1="35" y1="24" x2="35" y2="18" stroke="#4895ef" stroke-width="3"/>
+        <line x1="35" y1="76" x2="35" y2="82" stroke="#4895ef" stroke-width="3"/>
+        <line x1="9"  y1="50" x2="3"  y2="50" stroke="#4895ef" stroke-width="3"/>
+        <line x1="61" y1="50" x2="67" y2="50" stroke="#4895ef" stroke-width="3"/>
+        <line x1="16" y1="31" x2="12" y2="27" stroke="#4895ef" stroke-width="3"/>
+        <line x1="54" y1="69" x2="58" y2="73" stroke="#4895ef" stroke-width="3"/>
+        <line x1="54" y1="31" x2="58" y2="27" stroke="#4895ef" stroke-width="3"/>
+        <line x1="16" y1="69" x2="12" y2="73" stroke="#4895ef" stroke-width="3"/>
+        <!-- gear 2 (positive) — interlocked -->
+        <circle cx="70" cy="50" r="18" stroke="#9b5de5" stroke-width="2"/>
+        <circle cx="70" cy="50" r="11" stroke="#9b5de5" stroke-width="1.5"/>
+        <line x1="70" y1="28" x2="70" y2="22" stroke="#9b5de5" stroke-width="3"/>
+        <line x1="70" y1="72" x2="70" y2="78" stroke="#9b5de5" stroke-width="3"/>
+        <line x1="92" y1="50" x2="98" y2="50" stroke="#9b5de5" stroke-width="3"/>
+        <line x1="55" y1="37" x2="51" y2="33" stroke="#9b5de5" stroke-width="3"/>
+        <line x1="85" y1="63" x2="89" y2="67" stroke="#9b5de5" stroke-width="3"/>
+        <!-- clash point -->
+        <circle cx="53" cy="50" r="3" fill="#e05c3a" stroke="none"/>
+      </svg>
+    </div>
+
+    <p class="section-tag">The Tension</p>
+    <h2>When They Collide</h2>
+    <div class="cards cols-3">
+      <div class="card red">
+        <h3>Taxation</h3>
+        <p>Taking your income <strong>limits negative liberty</strong> — it is coercive state interference. But funding public schools and hospitals <strong>expands positive liberty</strong> for those who couldn't otherwise access them.</p>
+      </div>
+      <div class="card red">
+        <h3>Compulsory Education</h3>
+        <p>Forcing children — and their parents — to attend school <strong>violates negative liberty</strong>. Yet without it, children may lack the very capacities needed to be <strong>genuinely free adults</strong>.</p>
+      </div>
+      <div class="card red">
+        <h3>Healthcare Mandates</h3>
+        <p>Requiring insurance or vaccination <strong>restricts freedom of choice</strong>. But universal coverage ensures everyone has the <strong>real capacity to pursue</strong> their life plans when illness strikes.</p>
+      </div>
+      <div class="card">
+        <h3>Minimum Wage</h3>
+        <p>Restricting what employers and workers may agree to <strong>limits contractual freedom</strong>. But a wage floor means workers can <strong>actually live</strong> on their labour rather than merely having the formal right to work.</p>
+      </div>
+      <div class="card">
+        <h3>Zoning &amp; Property</h3>
+        <p>Telling landowners what they may build <strong>curtails their rights</strong>. But without it, the negative freedom to develop can destroy the positive conditions — clean air, walkable streets — that others depend on.</p>
+      </div>
+      <div class="card">
+        <h3>Drug Legalisation</h3>
+        <p>Prohibition is a clear <strong>negative liberty violation</strong>. But legalising everything leaves addicts in a state where their formal choices <strong>undermine their own</strong> deeper autonomy and self-mastery.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       9 · CRITIQUES OF NEGATIVE LIBERTY
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- empty cage (formal freedom, real trap) watermark -->
+    <div class="art" style="right:-30px;bottom:-30px;width:360px;height:360px;opacity:0.06;">
+      <svg viewBox="0 0 100 100" fill="none" stroke="#4895ef">
+        <rect x="20" y="20" width="60" height="70" rx="2" stroke-width="2"/>
+        <line x1="32" y1="20" x2="32" y2="90" stroke-width="1.2"/>
+        <line x1="44" y1="20" x2="44" y2="90" stroke-width="1.2"/>
+        <line x1="56" y1="20" x2="56" y2="90" stroke-width="1.2"/>
+        <line x1="68" y1="20" x2="68" y2="90" stroke-width="1.2"/>
+        <!-- door is OPEN -->
+        <line x1="20" y1="20" x2="20" y2="55" stroke="#4895ef" stroke-width="2"/>
+        <path d="M20,20 Q5,36 20,55" stroke="#4caf82" stroke-width="2" fill="none"/>
+        <!-- person inside, not moving -->
+        <circle cx="50" cy="52" r="7" stroke="#4895ef" stroke-width="1.5"/>
+        <line x1="50" y1="59" x2="50" y2="72" stroke="#4895ef" stroke-width="1.5"/>
+        <line x1="43" y1="64" x2="57" y2="64" stroke="#4895ef" stroke-width="1.5"/>
+        <line x1="50" y1="72" x2="44" y2="82" stroke="#4895ef" stroke-width="1.5"/>
+        <line x1="50" y1="72" x2="56" y2="82" stroke="#4895ef" stroke-width="1.5"/>
+        <!-- invisible walls dotted -->
+        <rect x="8" y="30" width="14" height="40" stroke="#e05c3a" stroke-width="1" stroke-dasharray="3,2" fill="none"/>
+      </svg>
+    </div>
+
+    <p class="section-tag" style="color:var(--blue);">Critique — Negative Liberty</p>
+    <h2>The Problem of Hollow Freedom</h2>
+    <div class="cards cols-3">
+      <div class="card blue">
+        <h3>Formal vs. Real Freedom</h3>
+        <p>Negative liberty is silent on whether people can <em>actually</em> do anything. A starving person is "free" to dine at the Ritz — no one is stopping them. The concept mistakes the absence of bars for genuine freedom.</p>
+      </div>
+      <div class="card red">
+        <h3>Ignores Structural Inequality</h3>
+        <p>Poverty, discrimination, and lack of education are not "obstacles" under negative liberty — so the theory has nothing to say about them. But they constrain people's lives as surely as any coercive law.</p>
+      </div>
+      <div class="card blue">
+        <h3>Freezes the Status Quo</h3>
+        <p>By calling current property arrangements "freedom," negative liberty <strong>naturalises</strong> existing distributions of power and wealth. What appears as a neutral baseline is actually a political choice disguised as non-interference.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       10 · CRITIQUES OF POSITIVE LIBERTY
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- paternalist hand pushing watermark -->
+    <div class="art" style="right:-20px;top:50%;transform:translateY(-50%);width:360px;height:360px;opacity:0.06;">
+      <svg viewBox="0 0 100 100" fill="none" stroke="#9b5de5">
+        <!-- large hand pushing -->
+        <path d="M60,20 Q80,20 80,40 L80,70 Q80,80 70,80 L45,80 Q38,80 35,72 L25,55 Q22,48 28,44 Q34,40 38,46 L42,52 L42,30 Q42,22 50,22 Q58,22 58,30 L58,45 L62,45 L62,30 Q62,22 70,22 Q78,22 78,30" stroke-width="2" fill="none"/>
+        <!-- label -->
+        <text x="65" y="92" text-anchor="middle" fill="#9b5de5" font-size="6" font-family="Arial" font-style="italic">"for your freedom"</text>
+        <!-- figure being pushed -->
+        <circle cx="20" cy="50" r="7" stroke="#e05c3a" stroke-width="1.5"/>
+        <line x1="20" y1="57" x2="20" y2="72" stroke="#e05c3a" stroke-width="1.5"/>
+        <line x1="12" y1="63" x2="28" y2="63" stroke="#e05c3a" stroke-width="1.5"/>
+        <line x1="20" y1="72" x2="14" y2="84" stroke="#e05c3a" stroke-width="1.5"/>
+        <line x1="20" y1="72" x2="26" y2="84" stroke="#e05c3a" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+    <p class="section-tag">Critique — Positive Liberty</p>
+    <h2>Berlin's Warning: The Road to Tyranny</h2>
+    <div class="cards cols-3">
+      <div class="card red">
+        <h3>The Paternalism Trap</h3>
+        <p>If freedom means achieving your <em>true</em> or <em>rational</em> self, those in power can claim to know what that self really wants — and override your actual choices in its name. The road from "enabling" to "forcing" is short.</p>
+      </div>
+      <div class="card red">
+        <h3>"Forced to Be Free"</h3>
+        <p>Rousseau's notorious phrase: if you refuse the general will, society may <em>"force you to be free."</em> Berlin argued this logic runs from Rousseau to Hegel to Marxist states that imprisoned dissidents to "liberate" them from false consciousness.</p>
+      </div>
+      <div class="card">
+        <h3>The Problem of "True" Selves</h3>
+        <p>Positive liberty depends on a theory of what people <em>really</em> want underneath their apparent preferences. Who decides? Berlin warned that authoritarian movements throughout history have used exactly this move to override individual will.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       11 · BERLIN QUOTE ON FORCED FREEDOM
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-quote">
+    <div class="quote-body">
+      <blockquote>
+        It is one thing to say that I know what is good for X, while he himself does not; and a very different thing to say that he has eo ipso chosen it, whether he knows this or not. The first may sometimes be true; the second is a confusion of freedom with something else.
+      </blockquote>
+      <p class="quote-source">— Isaiah Berlin, "Two Concepts of Liberty," 1958</p>
+    </div>
+    <!-- hand over mouth / coercion art -->
+    <div class="quote-art">
+      <svg viewBox="0 0 100 100" fill="none">
+        <!-- figure -->
+        <circle cx="40" cy="30" r="12" stroke="#9b5de5" stroke-width="2"/>
+        <line x1="40" y1="42" x2="40" y2="65" stroke="#9b5de5" stroke-width="2"/>
+        <line x1="28" y1="52" x2="52" y2="52" stroke="#9b5de5" stroke-width="2"/>
+        <line x1="40" y1="65" x2="30" y2="80" stroke="#9b5de5" stroke-width="2"/>
+        <line x1="40" y1="65" x2="50" y2="80" stroke="#9b5de5" stroke-width="2"/>
+        <!-- large hand covering mouth area -->
+        <path d="M26,27 Q18,22 16,30 Q14,38 24,40 L52,40 Q58,40 58,32 Q58,24 50,24 Q44,20 38,24" stroke="#e05c3a" stroke-width="2" fill="none"/>
+        <!-- FREEDOM label with irony arrow -->
+        <text x="75" y="35" text-anchor="middle" fill="#e05c3a" font-family="Arial" font-size="7" font-style="italic">"Free"</text>
+        <line x1="62" y1="35" x2="57" y2="35" stroke="#e05c3a" stroke-width="1.5"/>
+        <polyline points="60,32 57,35 60,38" stroke="#e05c3a" stroke-width="1.5" fill="none"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       12 · THE CAPABILITY APPROACH
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- expanding capability circles watermark -->
+    <div class="art" style="left:50%;top:50%;transform:translate(-50%,-50%);width:480px;height:480px;opacity:0.05;">
+      <svg viewBox="0 0 100 100" fill="none">
+        <circle cx="50" cy="50" r="8"  stroke="#4caf82" stroke-width="2"/>
+        <circle cx="50" cy="50" r="20" stroke="#4caf82" stroke-width="1.5"/>
+        <circle cx="50" cy="50" r="32" stroke="#4caf82" stroke-width="1.2"/>
+        <circle cx="50" cy="50" r="44" stroke="#4caf82" stroke-width="0.8" stroke-dasharray="4,3"/>
+        <line x1="50" y1="42" x2="50" y2="6"  stroke="#4caf82" stroke-width="0.8"/>
+        <line x1="50" y1="58" x2="50" y2="94" stroke="#4caf82" stroke-width="0.8"/>
+        <line x1="42" y1="50" x2="6"  y2="50" stroke="#4caf82" stroke-width="0.8"/>
+        <line x1="58" y1="50" x2="94" y2="50" stroke="#4caf82" stroke-width="0.8"/>
+      </svg>
+    </div>
+
+    <p class="section-tag">Beyond the Binary</p>
+    <h2>The Capability Approach</h2>
+    <div class="cards cols-3">
+      <div class="card green">
+        <h3>Amartya Sen &amp; Martha Nussbaum</h3>
+        <p>Beginning in the 1980s, Sen and Nussbaum developed an alternative framework: instead of asking about interference or self-mastery, ask what people are <em>actually able to do and be</em>.</p>
+      </div>
+      <div class="card green">
+        <h3>Capabilities, Not Rights Alone</h3>
+        <p>A list of central human capabilities — bodily health, education, emotional development, political participation, play — defines the real threshold of freedom. Both absence of coercion <em>and</em> adequate resources are necessary.</p>
+      </div>
+      <div class="card green">
+        <h3>Why It Matters</h3>
+        <p>The capability approach escapes Berlin's dilemma: it doesn't invoke a "true self" that can be forced. It asks only whether a person can <em>choose to exercise</em> a capability — not whether they must.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       13 · CONCLUSION
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-close">
+
+    <!-- balance scales watermark -->
+    <div class="art" style="left:50%;top:50%;transform:translate(-50%,-50%);width:400px;height:400px;opacity:0.07;">
+      <svg viewBox="0 0 100 110" fill="none">
+        <line x1="50" y1="10" x2="50" y2="105" stroke="#9b5de5" stroke-width="2"/>
+        <line x1="15" y1="26" x2="85" y2="26" stroke-width="2.5" stroke="#9b5de5"/>
+        <circle cx="50" cy="26" r="4" fill="#e8c547" stroke="none"/>
+        <!-- left pan chain -->
+        <line x1="15" y1="26" x2="10" y2="60" stroke="#4895ef" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <!-- right pan chain -->
+        <line x1="85" y1="26" x2="90" y2="56" stroke="#9b5de5" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <!-- left pan (negative) -->
+        <path d="M0,62 Q10,80 20,62" stroke="#4895ef" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- right pan (positive) -->
+        <path d="M80,58 Q90,76 100,58" stroke="#9b5de5" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="34" y1="105" x2="66" y2="105" stroke-width="3.5" stroke="#9b5de5" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <h2>A Tension Without a Final Answer</h2>
+    <div class="divider"></div>
+    <p>
+      Both concepts of liberty capture something real and important. Negative liberty rightly protects individuals against coercion and the overreach of power. Positive liberty rightly insists that formal freedom is worthless without the conditions to exercise it. The challenge of political philosophy — and of politics — is to hold both in view at once.
+    </p>
+    <div class="pill-row">
+      <span class="pill neg">Non-Interference</span>
+      <span class="pill pos">Self-Mastery</span>
+      <span class="pill both">Capability</span>
+      <span class="pill both">Balancing Both</span>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<div id="nav">
+  <button id="prev" onclick="go(-1)">← Prev</button>
+  <div class="dot-row" id="dots"></div>
+  <span id="counter">1 / 13</span>
+  <button id="next" onclick="go(1)">Next →</button>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const dotsEl  = document.getElementById('dots');
+  let cur = 0;
+
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' on' : '');
+    d.onclick = () => jump(i);
+    dotsEl.appendChild(d);
+  });
+
+  function show(idx) {
+    const prev = cur;
+    slides[prev].classList.remove('active');
+    slides[prev].classList.add('exit');
+    setTimeout(() => slides[prev].classList.remove('exit'), 400);
+    cur = idx;
+    slides[cur].classList.add('active');
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('on', i === cur));
+    document.getElementById('counter').textContent = `${cur + 1} / ${slides.length}`;
+    document.getElementById('prev').disabled = cur === 0;
+    document.getElementById('next').disabled = cur === slides.length - 1;
+  }
+
+  function go(dir)   { if (cur + dir >= 0 && cur + dir < slides.length) show(cur + dir); }
+  function jump(idx) { show(idx); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   go(-1);
+  });
+
+  document.getElementById('prev').disabled = true;
+</script>
+</body>
+</html>
