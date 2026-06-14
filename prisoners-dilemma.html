@@ -373,6 +373,45 @@
     .dot-row { display:flex; gap:6px; }
     .dot { width:6px; height:6px; border-radius:50%; background:#30363d; transition:background .3s; }
     .dot.on { background: var(--teal); }
+
+    /* ── mobile ── */
+    @media (max-width: 680px) {
+      #nav { display: none; }
+      .slide { padding: 28px 20px; }
+      .slide-section h2 { font-size: 1.4rem; margin-bottom: 18px; }
+      .slide-title h1   { font-size: 1.9rem; }
+      .subtitle         { font-size: 0.9rem; }
+      .cards.cols-2,
+      .cards.cols-3,
+      .cards.cols-4 { grid-template-columns: 1fr; }
+      .card { padding: 14px 16px; }
+      .card h3 { font-size: 0.85rem; }
+      .card p  { font-size: 0.8rem; }
+      .slide-quote     { flex-direction: column; gap: 20px; padding: 28px 20px; }
+      .quote-art       { display: none; }
+      .quote-body      { max-width: 100%; }
+      blockquote       { font-size: 0.95rem; }
+    }
+
+    @media (max-width: 680px) {
+      .slide-matrix    { overflow-y: auto; justify-content: flex-start; padding-top: 28px; }
+      .matrix-body     { max-width: 100%; }
+      .matrix-row-label { width: 68px; font-size: 0.58rem; padding-right: 6px; }
+      .matrix-cell     { min-height: 74px; padding: 8px 6px; }
+      .cell-scores     { font-size: 1rem; }
+      .cell-label      { font-size: 0.55rem; }
+      .nash-badge,
+      .pareto-badge    { font-size: 0.5rem; padding: 2px 4px; }
+      .matrix-legend   { flex-wrap: wrap; gap: 6px; font-size: 0.6rem; }
+      .player-labels   { font-size: 0.62rem; }
+      .strat-table     { font-size: 0.7rem; }
+      .strat-table th,
+      .strat-table td  { padding: 6px 7px; }
+      .strat-table th:nth-child(3),
+      .strat-table td:nth-child(3),
+      .strat-table th:nth-child(4),
+      .strat-table td:nth-child(4) { display: none; }
+    }
   </style>
 </head>
 <body>

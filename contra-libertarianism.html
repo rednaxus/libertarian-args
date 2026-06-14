@@ -236,6 +236,25 @@
     .dot-row { display:flex; gap:7px; }
     .dot { width:7px; height:7px; border-radius:50%; background:#3a3d52; transition:background .3s; }
     .dot.on { background: var(--gold); }
+
+    /* ── mobile ── */
+    @media (max-width: 680px) {
+      #nav { display: none; }
+      .slide { padding: 28px 20px; }
+      .slide-section h2 { font-size: 1.4rem; margin-bottom: 18px; }
+      .slide-title h1   { font-size: 1.9rem; }
+      .subtitle         { font-size: 0.9rem; }
+      .cards.cols-2,
+      .cards.cols-3,
+      .cards.cols-4 { grid-template-columns: 1fr; }
+      .card { padding: 14px 16px; }
+      .card h3 { font-size: 0.85rem; }
+      .card p  { font-size: 0.8rem; }
+      .slide-quote     { flex-direction: column; gap: 20px; padding: 28px 20px; }
+      .quote-art       { display: none; }
+      .quote-body      { max-width: 100%; }
+      blockquote       { font-size: 0.95rem; }
+    }
   </style>
 </head>
 <body>

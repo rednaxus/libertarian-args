@@ -293,6 +293,41 @@
     .dot-row { display:flex; gap:6px; }
     .dot { width:6px; height:6px; border-radius:50%; background:#2e2f52; transition:background .3s; }
     .dot.on { background: var(--violet); }
+
+    /* ── mobile ── */
+    @media (max-width: 680px) {
+      #nav { display: none; }
+      .slide { padding: 28px 20px; }
+      .slide-section h2 { font-size: 1.4rem; margin-bottom: 18px; }
+      .slide-title h1   { font-size: 1.9rem; }
+      .subtitle         { font-size: 0.9rem; }
+      .cards.cols-2,
+      .cards.cols-3,
+      .cards.cols-4 { grid-template-columns: 1fr; }
+      .card { padding: 14px 16px; }
+      .card h3 { font-size: 0.85rem; }
+      .card p  { font-size: 0.8rem; }
+      .slide-quote     { flex-direction: column; gap: 20px; padding: 28px 20px; }
+      .quote-art       { display: none; }
+      .quote-body      { max-width: 100%; }
+      blockquote       { font-size: 0.95rem; }
+    }
+
+    @media (max-width: 680px) {
+      .slide-concept   { flex-direction: column; gap: 16px; padding: 36px 20px; }
+      .concept-art     { display: none; }
+      .concept-def     { font-size: 0.82rem; }
+      .concept-points li { font-size: 0.78rem; }
+      .slide-thinker   { flex-direction: column; gap: 20px; padding: 28px 20px; }
+      .thinker-portrait { display: none; }
+      .thinker-text h2  { font-size: 1.5rem; }
+      .thinker-text p   { font-size: 0.82rem; }
+      .compare-table    { font-size: 0.7rem; }
+      .compare-table th,
+      .compare-table td { padding: 7px 8px; }
+      .compare-table th.dim-head,
+      .compare-table td.dim { display: none; }
+    }
   </style>
 </head>
 <body>
