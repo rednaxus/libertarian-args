@@ -6,8 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A collection of self-contained HTML slide decks built from Google Docs source material. No build step, no dependencies — each file opens directly in a browser.
 
-- `slides.html` — Libertarianism & the Libertarian Party: critical overview (14 slides)
+- `contra-libertarianism.html` — Libertarianism & the Libertarian Party: critical overview (14 slides)
 - `prisoners-dilemma.html` — The Prisoner's Dilemma: game theory explainer (11 slides)
+- `liberty.html` — Positive & Negative Liberty: Isaiah Berlin's two concepts (13 slides)
 
 ## How slides are built
 
@@ -21,7 +22,7 @@ Each HTML file is fully self-contained (inline CSS + JS, SVG art embedded). The 
 
 ## Color palettes
 
-`slides.html` uses gold as primary accent:
+`contra-libertarianism.html` uses gold as primary accent:
 ```
 --gold: #c9a84c  --dark: #0f1117  --mid: #1c1f2e  --card: #252836
 --accent: #e05c3a  --purple: #9b59b6  (self-sovereignty section)
