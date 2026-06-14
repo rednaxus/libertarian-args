@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Libertarianism: A Critical Overview</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #c9a84c;
+      --dark: #0f1117;
+      --mid: #1c1f2e;
+      --card: #252836;
+      --text: #e8e8f0;
+      --muted: #8888aa;
+      --accent: #e05c3a;
+      --purple: #9b59b6;
+    }
+
+    body {
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'Georgia', serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #deck {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 60px 80px;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity .45s ease, transform .45s ease;
+      pointer-events: none;
+    }
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+    .slide.exit {
+      opacity: 0;
+      transform: translateX(-60px);
+    }
+
+    /* art layer — sits behind content */
+    .art {
+      position: absolute;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .art svg { width: 100%; height: 100%; }
+
+    /* all direct flex children of .slide except .art go above */
+    .slide > *:not(.art) { position: relative; z-index: 1; }
+
+    /* ── title / divider slides ── */
+    .slide-title {
+      background: radial-gradient(ellipse at 30% 40%, #1e2340 0%, var(--dark) 70%);
+      text-align: center;
+    }
+    .slide-title .eyebrow {
+      font-family: 'Arial', sans-serif;
+      font-size: 0.8rem;
+      letter-spacing: .25em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 24px;
+    }
+    .slide-title h1 {
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      line-height: 1.15;
+      max-width: 820px;
+      color: #fff;
+    }
+    .slide-title h1 span { color: var(--gold); }
+    .slide-title .subtitle {
+      margin-top: 28px;
+      font-size: 1.1rem;
+      color: var(--muted);
+      font-style: italic;
+      max-width: 640px;
+    }
+    .divider {
+      width: 60px;
+      height: 3px;
+      background: var(--gold);
+      margin: 28px auto;
+      border-radius: 2px;
+    }
+
+    /* ── section slides ── */
+    .slide-section { background: var(--mid); }
+    .section-tag {
+      font-family: 'Arial', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+      align-self: flex-start;
+    }
+    .slide-section h2 {
+      font-size: clamp(1.6rem, 3vw, 2.6rem);
+      color: #fff;
+      align-self: flex-start;
+      line-height: 1.2;
+      margin-bottom: 40px;
+    }
+    .cards {
+      display: grid;
+      gap: 16px;
+      width: 100%;
+    }
+    .cards.cols-2 { grid-template-columns: 1fr 1fr; }
+    .cards.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 22px 26px;
+      border-top: 3px solid var(--gold);
+    }
+    .card.red   { border-top-color: var(--accent); }
+    .card.blue  { border-top-color: #4a90d9; }
+    .card.green { border-top-color: #4caf82; }
+    .card h3 {
+      font-size: 0.95rem;
+      font-family: 'Arial', sans-serif;
+      font-weight: 700;
+      letter-spacing: .04em;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+    .card p {
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+    .card p em { color: #ccc; font-style: italic; }
+
+    /* ── quote slides ── */
+    .slide-quote {
+      background: linear-gradient(135deg, #13161f 0%, #1a1d2e 100%);
+      flex-direction: row;
+      gap: 60px;
+      align-items: center;
+      justify-content: center;
+    }
+    .quote-body { flex: 1; max-width: 620px; }
+    blockquote {
+      font-size: clamp(1.05rem, 1.8vw, 1.45rem);
+      line-height: 1.7;
+      color: #d0d0e8;
+      font-style: italic;
+      position: relative;
+      padding-left: 10px;
+    }
+    blockquote::before {
+      content: '\201C';
+      font-size: 6rem;
+      color: var(--gold);
+      opacity: .2;
+      position: absolute;
+      top: -28px;
+      left: -16px;
+      line-height: 1;
+    }
+    .quote-source {
+      margin-top: 24px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-style: normal;
+      font-family: 'Arial', sans-serif;
+      letter-spacing: .1em;
+    }
+    .quote-art { flex-shrink: 0; width: 180px; height: 180px; opacity: 0.55; }
+    .quote-art svg { width: 100%; height: 100%; }
+
+    /* ── closing slide ── */
+    .slide-close {
+      background: radial-gradient(ellipse at 70% 60%, #1e2340 0%, var(--dark) 70%);
+      text-align: center;
+    }
+    .slide-close h2 { font-size: clamp(1.6rem, 3vw, 2.6rem); color: #fff; margin-bottom: 20px; }
+    .slide-close p { max-width: 680px; font-size: 1.05rem; line-height: 1.7; color: var(--muted); }
+    .pill-row { display: flex; gap: 14px; margin-top: 36px; flex-wrap: wrap; justify-content: center; }
+    .pill {
+      border: 1.5px solid var(--gold);
+      border-radius: 999px;
+      padding: 8px 22px;
+      font-size: 0.82rem;
+      font-family: 'Arial', sans-serif;
+      color: var(--gold);
+      letter-spacing: .06em;
+    }
+
+    /* ── nav ── */
+    #nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 18px 40px;
+      background: var(--mid);
+      border-top: 1px solid #2a2d3e;
+    }
+    #nav button {
+      background: none;
+      border: 1.5px solid #3a3d52;
+      color: var(--text);
+      padding: 8px 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-family: 'Arial', sans-serif;
+      transition: border-color .2s, color .2s;
+    }
+    #nav button:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+    #nav button:disabled { opacity: .3; cursor: default; }
+    #counter { font-family:'Arial',sans-serif; font-size:0.78rem; color:var(--muted); min-width:70px; text-align:center; }
+    .dot-row { display:flex; gap:7px; }
+    .dot { width:7px; height:7px; border-radius:50%; background:#3a3d52; transition:background .3s; }
+    .dot.on { background: var(--gold); }
+  </style>
+</head>
+<body>
+<div id="deck">
+
+  <!-- ══════════════════════════════════════════
+       1 · TITLE
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-title active">
+
+    <!-- Scales of Justice -->
+    <div class="art" style="right:80px;top:50%;transform:translateY(-50%);width:240px;height:280px;opacity:0.3;">
+      <svg viewBox="0 0 100 120" fill="none" stroke="#c9a84c">
+        <line x1="50" y1="12" x2="50" y2="108" stroke-width="2"/>
+        <line x1="18" y1="28" x2="82" y2="28" stroke-width="2.5"/>
+        <circle cx="50" cy="28" r="4" fill="#c9a84c" stroke="none"/>
+        <!-- left chain -->
+        <line x1="18" y1="28" x2="12" y2="58" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <!-- right chain -->
+        <line x1="82" y1="28" x2="88" y2="54" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <!-- left pan (tilted down slightly) -->
+        <path d="M2,60 Q12,82 22,62" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- right pan (higher) -->
+        <path d="M78,56 Q88,74 98,56" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- base -->
+        <line x1="34" y1="108" x2="66" y2="108" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="42" y1="104" x2="58" y2="104" stroke-width="2"/>
+        <!-- torch flame -->
+        <path d="M50,12 Q54,4 50,0 Q46,4 50,12" fill="#c9a84c" stroke="none"/>
+        <path d="M50,10 Q53,6 50,3 Q47,6 50,10" fill="#e05c3a" stroke="none"/>
+      </svg>
+    </div>
+
+    <p class="eyebrow">Critical Analysis</p>
+    <h1>Libertarianism &amp; the <span>Libertarian Party</span></h1>
+    <div class="divider"></div>
+    <p class="subtitle">A multi-dimensional examination of philosophy, economics, and electoral politics</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       2 · OVERVIEW
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- Pentagon network watermark -->
+    <div class="art" style="right:-60px;top:50%;transform:translateY(-50%);width:420px;height:420px;opacity:0.07;">
+      <svg viewBox="0 0 100 100" fill="none">
+        <polygon points="50,5 95,35 79,82 21,82 5,35" stroke="#c9a84c" stroke-width="1.5" fill="none"/>
+        <line x1="50" y1="50" x2="50" y2="5"  stroke="#c9a84c" stroke-width="0.8"/>
+        <line x1="50" y1="50" x2="95" y2="35" stroke="#c9a84c" stroke-width="0.8"/>
+        <line x1="50" y1="50" x2="79" y2="82" stroke="#c9a84c" stroke-width="0.8"/>
+        <line x1="50" y1="50" x2="21" y2="82" stroke="#c9a84c" stroke-width="0.8"/>
+        <line x1="50" y1="50" x2="5"  y2="35" stroke="#c9a84c" stroke-width="0.8"/>
+        <circle cx="50" cy="50" r="6" stroke="#c9a84c" stroke-width="1.5" fill="none"/>
+        <circle cx="50" cy="5"  r="4" fill="#c9a84c"/>
+        <circle cx="95" cy="35" r="4" fill="#e05c3a"/>
+        <circle cx="79" cy="82" r="4" fill="#e05c3a"/>
+        <circle cx="21" cy="82" r="4" fill="#9b59b6"/>
+        <circle cx="5"  cy="35" r="4" fill="#4a90d9"/>
+      </svg>
+    </div>
+
+    <p class="section-tag">Overview</p>
+    <h2>Five Lenses of Critique</h2>
+    <div class="cards cols-2">
+      <div class="card">
+        <h3>🧠 Philosophical</h3>
+        <p>Negative liberty, individualism, and the neglect of community and institutions in shaping human development.</p>
+      </div>
+      <div class="card red">
+        <h3>📈 Economic</h3>
+        <p>Market failures, monopolies, information asymmetry, and wealth concentration undermining democracy.</p>
+      </div>
+      <div class="card red">
+        <h3>🗳️ Electoral</h3>
+        <p>Chronically low vote shares, spoiler accusations, and internal ideological rifts.</p>
+      </div>
+      <div class="card" style="border-top-color:var(--purple);">
+        <h3>🔑 Self-Sovereignty</h3>
+        <p>The libertarian cornerstone — and the philosophical, practical, and cultural arguments against it as an absolute foundation.</p>
+      </div>
+      <div class="card blue" style="grid-column: 1 / -1;">
+        <h3>⚖️ Counterarguments</h3>
+        <p>Where libertarians push back — and what a balanced assessment requires.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       3 · PHILOSOPHY
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- Person in isolation bubble watermark -->
+    <div class="art" style="right:-40px;bottom:-40px;width:380px;height:380px;opacity:0.06;">
+      <svg viewBox="0 0 100 110" fill="none" stroke="#c9a84c">
+        <circle cx="50" cy="62" r="44" stroke-width="1.2" stroke-dasharray="5,3"/>
+        <circle cx="50" cy="30" r="13" stroke-width="2"/>
+        <line x1="50" y1="43" x2="50" y2="72" stroke-width="2"/>
+        <line x1="32" y1="55" x2="68" y2="55" stroke-width="2"/>
+        <line x1="50" y1="72" x2="38" y2="90" stroke-width="2"/>
+        <line x1="50" y1="72" x2="62" y2="90" stroke-width="2"/>
+      </svg>
+    </div>
+
+    <p class="section-tag">Lens 1 — Philosophy</p>
+    <h2>The Problem with Negative Liberty</h2>
+    <div class="cards cols-3">
+      <div class="card">
+        <h3>Freedom From vs. Freedom To</h3>
+        <p>Libertarianism prioritizes freedom <em>from</em> interference, but ignores whether people have meaningful options at all.</p>
+      </div>
+      <div class="card red">
+        <h3>Inequality of Choice</h3>
+        <p>Disadvantaged populations face <em>"severely limited options — no effective access to education or healthcare"</em> even without state coercion.</p>
+      </div>
+      <div class="card">
+        <h3>The Isolated Individual Fallacy</h3>
+        <p>Critics argue the ideology treats people as atomized actors, ignoring how communities and institutions shape who we become.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       4 · QUOTE — negative liberty
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-quote">
+    <div class="quote-body">
+      <blockquote>
+        Negative liberty may permit severe inequality — leaving disadvantaged populations with no effective access to education or healthcare — while technically violating no libertarian principle.
+      </blockquote>
+      <p class="quote-source">— Philosophical Issues</p>
+    </div>
+    <!-- Two contrasting figures: one free, one constrained -->
+    <div class="quote-art">
+      <svg viewBox="0 0 100 100" fill="none">
+        <!-- Left person: open arms, free -->
+        <circle cx="28" cy="22" r="9" stroke="#4caf82" stroke-width="2"/>
+        <line x1="28" y1="31" x2="28" y2="58" stroke="#4caf82" stroke-width="2"/>
+        <line x1="14" y1="40" x2="28" y2="36" stroke="#4caf82" stroke-width="2"/>
+        <line x1="42" y1="38" x2="28" y2="36" stroke="#4caf82" stroke-width="2"/>
+        <line x1="28" y1="58" x2="18" y2="75" stroke="#4caf82" stroke-width="2"/>
+        <line x1="28" y1="58" x2="38" y2="75" stroke="#4caf82" stroke-width="2"/>
+        <!-- Right person: arms constrained, chains -->
+        <circle cx="72" cy="22" r="9" stroke="#e05c3a" stroke-width="2"/>
+        <line x1="72" y1="31" x2="72" y2="58" stroke="#e05c3a" stroke-width="2"/>
+        <line x1="58" y1="45" x2="86" y2="45" stroke="#e05c3a" stroke-width="2"/>
+        <line x1="72" y1="58" x2="62" y2="75" stroke="#e05c3a" stroke-width="2"/>
+        <line x1="72" y1="58" x2="82" y2="75" stroke="#e05c3a" stroke-width="2"/>
+        <!-- Chain on right person wrists -->
+        <circle cx="58" cy="45" r="4" stroke="#e05c3a" stroke-width="1.5" fill="none"/>
+        <circle cx="86" cy="45" r="4" stroke="#e05c3a" stroke-width="1.5" fill="none"/>
+        <line x1="54" y1="45" x2="51" y2="48" stroke="#e05c3a" stroke-width="1"/>
+        <line x1="90" y1="45" x2="93" y2="48" stroke="#e05c3a" stroke-width="1"/>
+        <!-- Divider -->
+        <line x1="50" y1="10" x2="50" y2="80" stroke="#c9a84c" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>
+        <!-- Labels -->
+        <text x="28" y="88" text-anchor="middle" fill="#4caf82" font-family="Arial" font-size="6">FORMAL</text>
+        <text x="72" y="88" text-anchor="middle" fill="#e05c3a" font-family="Arial" font-size="6">REAL</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       5 · ECONOMICS
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- Market crash watermark -->
+    <div class="art" style="right:-30px;bottom:-20px;width:380px;height:280px;opacity:0.07;">
+      <svg viewBox="0 0 120 90" fill="none">
+        <line x1="10" y1="78" x2="115" y2="78" stroke="#c9a84c" stroke-width="2"/>
+        <line x1="10" y1="5"  x2="10"  y2="78" stroke="#c9a84c" stroke-width="2"/>
+        <polyline points="10,68 25,52 40,38 55,26 62,20" stroke="#4caf82" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="62" cy="20" r="4" fill="#e05c3a" stroke="none"/>
+        <polyline points="62,20 72,26 78,44 84,62 90,72 96,75" stroke="#e05c3a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="85" y1="35" x2="85" y2="68" stroke="#e05c3a" stroke-width="1.5"/>
+        <polyline points="80,62 85,72 90,62" stroke="#e05c3a" stroke-width="1.5" fill="none"/>
+      </svg>
+    </div>
+
+    <p class="section-tag">Lens 2 — Economics</p>
+    <h2>Where Unregulated Markets Fail</h2>
+    <div class="cards cols-2">
+      <div class="card red">
+        <h3>Monopolies &amp; Concentration</h3>
+        <p>Unregulated markets frequently consolidate into monopolies, reducing competition and harming consumers.</p>
+      </div>
+      <div class="card red">
+        <h3>Information Asymmetry</h3>
+        <p>Markets routinely fail when buyers and sellers don't share equal information — a precondition laissez-faire cannot guarantee.</p>
+      </div>
+      <div class="card">
+        <h3>Boom-Bust Cycles</h3>
+        <p>Historical evidence shows cyclical instability as an intrinsic feature of unregulated markets, not a correctable edge case.</p>
+      </div>
+      <div class="card">
+        <h3>Democracy vs. Plutocracy</h3>
+        <p>Extreme wealth concentration translates into political power, undermining the democratic participation libertarians claim to value.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       6 · EXTERNALITIES
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- Factory pollution / ripple watermark -->
+    <div class="art" style="right:-30px;bottom:-20px;width:400px;height:340px;opacity:0.07;">
+      <svg viewBox="0 0 120 100" fill="none">
+        <!-- factory building -->
+        <rect x="30" y="55" width="60" height="40" stroke="#c9a84c" stroke-width="2"/>
+        <!-- smokestack left -->
+        <rect x="38" y="38" width="10" height="20" stroke="#c9a84c" stroke-width="1.5"/>
+        <!-- smokestack right -->
+        <rect x="72" y="44" width="10" height="14" stroke="#c9a84c" stroke-width="1.5"/>
+        <!-- smoke plumes (negative externality) -->
+        <path d="M43,36 Q38,26 44,20 Q50,14 44,8" stroke="#e05c3a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <path d="M43,36 Q50,28 46,22 Q40,16 48,10" stroke="#e05c3a" stroke-width="1.3" fill="none" stroke-linecap="round" opacity="0.6"/>
+        <path d="M77,42 Q72,32 78,26 Q84,20 78,14" stroke="#e05c3a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <!-- person affected (right side) -->
+        <circle cx="104" cy="68" r="6" stroke="#e05c3a" stroke-width="1.5"/>
+        <line x1="104" y1="74" x2="104" y2="88" stroke="#e05c3a" stroke-width="1.5"/>
+        <line x1="96"  y1="80" x2="112" y2="80" stroke="#e05c3a" stroke-width="1.5"/>
+        <!-- ripple lines from factory to person -->
+        <path d="M90,70 Q96,66 100,68" stroke="#e05c3a" stroke-width="1" stroke-dasharray="2,2" fill="none"/>
+        <path d="M90,74 Q96,72 100,72" stroke="#e05c3a" stroke-width="1" stroke-dasharray="2,2" fill="none"/>
+        <!-- vaccine / positive externality symbol -->
+        <circle cx="12" cy="30" r="8" stroke="#4caf82" stroke-width="1.5" fill="none"/>
+        <line x1="12" y1="24" x2="12" y2="36" stroke="#4caf82" stroke-width="1.5"/>
+        <line x1="6"  y1="30" x2="18" y2="30" stroke="#4caf82" stroke-width="1.5"/>
+        <!-- ripple outward from + -->
+        <circle cx="12" cy="30" r="14" stroke="#4caf82" stroke-width="0.8" stroke-dasharray="3,3" fill="none" opacity="0.6"/>
+        <circle cx="12" cy="30" r="20" stroke="#4caf82" stroke-width="0.6" stroke-dasharray="2,4" fill="none" opacity="0.3"/>
+      </svg>
+    </div>
+
+    <p class="section-tag">Lens 2 — Economics</p>
+    <h2>The Externalities Problem</h2>
+    <div class="cards cols-3">
+      <div class="card">
+        <h3>What Are Externalities?</h3>
+        <p>Unintended side effects — costs or benefits — falling on third parties not party to a transaction. They create a wedge between private and social costs that markets cannot self-correct.</p>
+      </div>
+      <div class="card red">
+        <h3>Negative Externalities</h3>
+        <p>Factory pollution imposes costs on uninvolved communities. Because producers don't pay those costs, harmful goods are <em>overproduced</em> relative to what is socially optimal.</p>
+      </div>
+      <div class="card green">
+        <h3>Positive Externalities</h3>
+        <p>Vaccination creates herd immunity that benefits even the unvaccinated. Because producers can't capture all that value, beneficial activities are <em>underproduced</em> without intervention.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       7 · QUOTE — laissez-faire
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-quote">
+    <div class="quote-body">
+      <blockquote>
+        Pure laissez-faire has never scaled to a modern nation-state successfully.
+      </blockquote>
+      <p class="quote-source">— Economic Concerns</p>
+    </div>
+    <!-- Nation/building sinking -->
+    <div class="quote-art">
+      <svg viewBox="0 0 100 100" fill="none">
+        <!-- Building / capitol dome -->
+        <rect x="30" y="52" width="40" height="28" stroke="#c9a84c" stroke-width="2"/>
+        <polygon points="50,34 22,52 78,52" stroke="#c9a84c" stroke-width="2" fill="none"/>
+        <path d="M42,34 Q50,24 58,34" stroke="#c9a84c" stroke-width="2" fill="none"/>
+        <!-- Columns -->
+        <line x1="38" y1="52" x2="38" y2="80" stroke="#c9a84c" stroke-width="1.5"/>
+        <line x1="50" y1="52" x2="50" y2="80" stroke="#c9a84c" stroke-width="1.5"/>
+        <line x1="62" y1="52" x2="62" y2="80" stroke="#c9a84c" stroke-width="1.5"/>
+        <!-- Water line -->
+        <path d="M0,82 Q12,78 25,82 Q38,86 50,82 Q62,78 75,82 Q88,86 100,82" stroke="#4a90d9" stroke-width="2" fill="none"/>
+        <!-- X mark -->
+        <line x1="36" y1="58" x2="64" y2="76" stroke="#e05c3a" stroke-width="2.5" opacity="0.8"/>
+        <line x1="64" y1="58" x2="36" y2="76" stroke="#e05c3a" stroke-width="2.5" opacity="0.8"/>
+        <!-- Down arrow (sinking) -->
+        <line x1="88" y1="30" x2="88" y2="72" stroke="#e05c3a" stroke-width="2"/>
+        <polyline points="83,66 88,75 93,66" stroke="#e05c3a" stroke-width="2" fill="none"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       7 · ELECTORAL
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- Ballot / vote split watermark -->
+    <div class="art" style="right:-30px;top:50%;transform:translateY(-50%);width:340px;height:340px;opacity:0.07;">
+      <svg viewBox="0 0 100 110" fill="none">
+        <!-- box -->
+        <rect x="12" y="40" width="76" height="58" rx="3" stroke="#c9a84c" stroke-width="2"/>
+        <!-- slot -->
+        <rect x="36" y="36" width="28" height="8" rx="2" stroke="#c9a84c" stroke-width="1.5"/>
+        <!-- one small ballot -->
+        <rect x="43" y="14" width="14" height="24" rx="1" stroke="#4caf82" stroke-width="1.5"/>
+        <!-- X on box face -->
+        <line x1="30" y1="58" x2="70" y2="88" stroke="#e05c3a" stroke-width="2.5"/>
+        <line x1="70" y1="58" x2="30" y2="88" stroke="#e05c3a" stroke-width="2.5"/>
+        <!-- stars of third-party fragmentation  -->
+        <circle cx="20" cy="25" r="5" stroke="#c9a84c" stroke-width="1.5" fill="none" stroke-dasharray="2,2"/>
+        <circle cx="80" cy="20" r="4" stroke="#c9a84c" stroke-width="1.5" fill="none" stroke-dasharray="2,2"/>
+      </svg>
+    </div>
+
+    <p class="section-tag">Lens 3 — Electoral Performance</p>
+    <h2>The Libertarian Party's Struggles</h2>
+    <div class="cards cols-3">
+      <div class="card red">
+        <h3>Minimal Vote Share</h3>
+        <p>The LP <em>"rarely wins major offices"</em> and consistently captures only a small fraction of the popular vote in national races.</p>
+      </div>
+      <div class="card red">
+        <h3>The Spoiler Accusation</h3>
+        <p>Critics argue LP candidates siphon votes between major parties without delivering wins, skewing outcomes unpredictably.</p>
+      </div>
+      <div class="card">
+        <h3>Internal Schisms</h3>
+        <p>Ideological purity battles have <em>"caused schisms and alienated moderates,"</em> hampering coalition building and long-term growth.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       8 · SELF-SOVEREIGNTY DIVIDER
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-title" style="background: radial-gradient(ellipse at 60% 40%, #1e1535 0%, var(--dark) 70%);">
+
+    <!-- Human silhouette with crown and key -->
+    <div class="art" style="right:80px;top:50%;transform:translateY(-50%);width:220px;height:280px;opacity:0.4;">
+      <svg viewBox="0 0 80 110" fill="none">
+        <!-- Crown above head -->
+        <path d="M20,18 L28,6 L40,14 L52,6 L60,18" stroke="#c9a84c" stroke-width="2.5" stroke-linejoin="round" fill="none"/>
+        <line x1="20" y1="18" x2="60" y2="18" stroke="#c9a84c" stroke-width="2"/>
+        <!-- Head -->
+        <circle cx="40" cy="30" r="14" stroke="#9b59b6" stroke-width="2.5"/>
+        <!-- Body -->
+        <path d="M16,80 Q16,56 40,56 Q64,56 64,80 L64,95 L16,95 Z" stroke="#9b59b6" stroke-width="2.5" fill="none"/>
+        <!-- Key at chest -->
+        <circle cx="40" cy="74" r="7" stroke="#c9a84c" stroke-width="2"/>
+        <line x1="47" y1="74" x2="60" y2="74" stroke="#c9a84c" stroke-width="2"/>
+        <line x1="56" y1="74" x2="56" y2="80" stroke="#c9a84c" stroke-width="2"/>
+        <line x1="60" y1="74" x2="60" y2="80" stroke="#c9a84c" stroke-width="2"/>
+      </svg>
+    </div>
+
+    <p class="eyebrow" style="color:var(--purple);">Deep Dive</p>
+    <h1>Arguments Against <span style="color:var(--purple);">Self-Sovereignty</span></h1>
+    <div class="divider" style="background:var(--purple);"></div>
+    <p class="subtitle">Self-ownership: the claim that individuals hold full moral rights over their own bodies, minds, labor, and choices — and the cornerstone of libertarian political theory.</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       9 · SELF-SOVEREIGNTY PHILOSOPHICAL
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- Chain breaking watermark -->
+    <div class="art" style="left:50%;top:50%;transform:translate(-50%,-50%);width:520px;height:200px;opacity:0.06;">
+      <svg viewBox="0 0 140 60" fill="none" stroke="#9b59b6">
+        <ellipse cx="14" cy="30" rx="11" ry="6" stroke-width="2" transform="rotate(-25 14 30)"/>
+        <ellipse cx="30" cy="30" rx="11" ry="6" stroke-width="2" transform="rotate(25 30 30)"/>
+        <ellipse cx="46" cy="30" rx="11" ry="6" stroke-width="2" transform="rotate(-25 46 30)"/>
+        <!-- break -->
+        <line x1="57" y1="24" x2="64" y2="36" stroke="#e05c3a" stroke-width="3" stroke-linecap="round"/>
+        <line x1="64" y1="24" x2="57" y2="36" stroke="#e05c3a" stroke-width="3" stroke-linecap="round"/>
+        <ellipse cx="76" cy="30" rx="11" ry="6" stroke-width="2" transform="rotate(-25 76 30)"/>
+        <ellipse cx="92" cy="30" rx="11" ry="6" stroke-width="2" transform="rotate(25 92 30)"/>
+        <ellipse cx="108" cy="30" rx="11" ry="6" stroke-width="2" transform="rotate(-25 108 30)"/>
+        <ellipse cx="124" cy="30" rx="11" ry="6" stroke-width="2" transform="rotate(25 124 30)"/>
+      </svg>
+    </div>
+
+    <p class="section-tag" style="color:var(--purple);">Self-Sovereignty — Philosophical Objections</p>
+    <h2>An Unstable Foundation</h2>
+    <div class="cards cols-2">
+      <div class="card" style="border-top-color:var(--purple);">
+        <h3>Not Self-Evident</h3>
+        <p>G.A. Cohen argues self-ownership lacks deeper justification. Treating the self as "property" is metaphysically odd — we <em>are</em> our bodies and minds; we don't separately <em>own</em> them.</p>
+      </div>
+      <div class="card red">
+        <h3>Permits Voluntary Enslavement</h3>
+        <p>Full self-sovereignty allows people to sell themselves into slavery or make irrevocable self-destructive deals — undermining autonomy itself rather than protecting it.</p>
+      </div>
+      <div class="card red">
+        <h3>No Duty to Assist</h3>
+        <p>It denies enforceable obligations to help others beyond voluntary charity. Critics argue a "duty to assist" should override strict self-ownership in cases of extreme inequality or life-threatening need.</p>
+      </div>
+      <div class="card" style="border-top-color:var(--purple);">
+        <h3>Atomism vs. Interdependence</h3>
+        <p>Humans are social creatures shaped by communities, families, and luck. Pure self-sovereignty treats people as isolated atoms, ignoring the collective rules that make individual flourishing possible.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       10 · SELF-SOVEREIGNTY PRACTICAL
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- Cracked bridge watermark -->
+    <div class="art" style="left:50%;bottom:-30px;transform:translateX(-50%);width:600px;height:220px;opacity:0.07;">
+      <svg viewBox="0 0 140 80" fill="none">
+        <!-- left deck -->
+        <line x1="0" y1="42" x2="55" y2="42" stroke="#c9a84c" stroke-width="3"/>
+        <!-- right deck -->
+        <line x1="75" y1="42" x2="140" y2="42" stroke="#c9a84c" stroke-width="3"/>
+        <!-- crack -->
+        <path d="M55,42 L60,50 L65,34 L70,46 L75,42" stroke="#e05c3a" stroke-width="2.5" fill="none"/>
+        <!-- supports -->
+        <line x1="28" y1="42" x2="28" y2="75" stroke="#c9a84c" stroke-width="2"/>
+        <line x1="112" y1="42" x2="112" y2="75" stroke="#c9a84c" stroke-width="2"/>
+        <!-- arches -->
+        <path d="M0,75 Q28,35 55,42"  stroke="#c9a84c" stroke-width="1.5" fill="none"/>
+        <path d="M75,42 Q112,35 140,75" stroke="#c9a84c" stroke-width="1.5" fill="none"/>
+        <!-- crack lines in supports -->
+        <line x1="22" y1="55" x2="34" y2="60" stroke="#e05c3a" stroke-width="1.5"/>
+        <line x1="106" y1="60" x2="118" y2="55" stroke="#e05c3a" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+    <p class="section-tag" style="color:var(--purple);">Self-Sovereignty — Practical Objections</p>
+    <h2>Where It Breaks Down in the Real World</h2>
+    <div class="cards cols-3">
+      <div class="card red">
+        <h3>Entrenches Brute Luck</h3>
+        <p>When paired with private resource appropriation, self-ownership protects outcomes driven by luck rather than desert — creating <em>"de facto coercion through economic dependence."</em></p>
+      </div>
+      <div class="card red">
+        <h3>Public Goods &amp; Externalities</h3>
+        <p>Strict adherence complicates solutions to pollution, pandemics, or infrastructure. Coordination problems — prisoner's dilemmas — show that some coercion can make <em>everyone</em> better off.</p>
+      </div>
+      <div class="card" style="border-top-color:var(--purple);">
+        <h3>Fails Vulnerable Groups</h3>
+        <p>Children, the mentally incapacitated, and those in crisis don't fit the model. Defining consent boundaries requires collective political decisions — undermining pure individualism from within.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       11 · QUOTE — positive liberty
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-quote">
+    <div class="quote-body">
+      <blockquote>
+        Formal self-ownership can coexist with substantive unfreedom due to poverty, ignorance, or circumstance. Effective autonomy — positive liberty — matters more than non-interference alone.
+      </blockquote>
+      <p class="quote-source">— Arguments Against Self-Sovereignty</p>
+    </div>
+    <!-- Bird escaping open cage -->
+    <div class="quote-art">
+      <svg viewBox="0 0 100 100" fill="none">
+        <!-- cage body -->
+        <rect x="8" y="32" width="52" height="52" rx="2" stroke="#c9a84c" stroke-width="1.8"/>
+        <!-- bars -->
+        <line x1="20" y1="32" x2="20" y2="84" stroke="#c9a84c" stroke-width="1.2"/>
+        <line x1="34" y1="32" x2="34" y2="84" stroke="#c9a84c" stroke-width="1.2"/>
+        <line x1="48" y1="32" x2="48" y2="84" stroke="#c9a84c" stroke-width="1.2"/>
+        <!-- open door -->
+        <rect x="0"  y="32" width="10" height="28" rx="1" stroke="#4caf82" stroke-width="1.8" fill="none"/>
+        <line x1="8" y1="32" x2="8" y2="60" stroke="#4caf82" stroke-width="1.8"/>
+        <!-- bird flying free (top right) -->
+        <path d="M64,18 Q74,8  84,14" stroke="#4caf82" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M64,18 Q74,28 84,24" stroke="#4caf82" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <circle cx="85" cy="19" r="3.5" fill="#4caf82"/>
+        <!-- motion trail -->
+        <line x1="56" y1="16" x2="62" y2="18" stroke="#4caf82" stroke-width="1.2" stroke-dasharray="2,2"/>
+        <line x1="53" y1="22" x2="61" y2="22" stroke="#4caf82" stroke-width="1.2" stroke-dasharray="2,2"/>
+        <!-- label -->
+        <text x="80" y="40" fill="#4caf82" font-size="6" font-family="Arial" text-anchor="middle">FREE</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       12 · COUNTERARGUMENTS
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- Debate speech bubbles watermark -->
+    <div class="art" style="right:-20px;top:50%;transform:translateY(-50%);width:360px;height:260px;opacity:0.07;">
+      <svg viewBox="0 0 110 90" fill="none">
+        <path d="M5,5 Q5,0 10,0 L52,0 Q57,0 57,5 L57,35 Q57,40 52,40 L28,40 L18,52 L21,40 L10,40 Q5,40 5,35 Z" stroke="#4a90d9" stroke-width="2"/>
+        <path d="M105,5 Q105,0 100,0 L58,0 Q53,0 53,5 L53,35 Q53,40 58,40 L82,40 L92,52 L89,40 L100,40 Q105,40 105,35 Z" stroke="#e05c3a" stroke-width="2"/>
+        <circle cx="22" cy="20" r="3" fill="#4a90d9"/>
+        <circle cx="31" cy="20" r="3" fill="#4a90d9"/>
+        <circle cx="40" cy="20" r="3" fill="#4a90d9"/>
+        <circle cx="70" cy="20" r="3" fill="#e05c3a"/>
+        <circle cx="79" cy="20" r="3" fill="#e05c3a"/>
+        <circle cx="88" cy="20" r="3" fill="#e05c3a"/>
+      </svg>
+    </div>
+
+    <p class="section-tag">Lens 5 — The Other Side</p>
+    <h2>Libertarian Counterarguments</h2>
+    <div class="cards cols-3">
+      <div class="card blue">
+        <h3>Misrepresentation</h3>
+        <p>Libertarians argue critics attack straw-man versions of the philosophy rather than engaging with its most sophisticated defenses.</p>
+      </div>
+      <div class="card blue">
+        <h3>Government Failure</h3>
+        <p>Regulations and state programs frequently underperform, introduce rent-seeking, and create the very problems they aim to solve.</p>
+      </div>
+      <div class="card green">
+        <h3>Voluntary Success Stories</h3>
+        <p>Voluntary, market-driven approaches have historically succeeded in specific contexts — mutual aid, innovation, and civil society.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       13 · CONCLUSION
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-close">
+
+    <!-- Compass -->
+    <div class="art" style="left:50%;top:50%;transform:translate(-50%,-50%);width:380px;height:380px;opacity:0.08;">
+      <svg viewBox="0 0 100 100" fill="none">
+        <circle cx="50" cy="50" r="46" stroke="#c9a84c" stroke-width="1.5"/>
+        <circle cx="50" cy="50" r="34" stroke="#c9a84c" stroke-width="0.8" stroke-dasharray="4,3"/>
+        <circle cx="50" cy="50" r="7"  stroke="#c9a84c" stroke-width="1.5"/>
+        <!-- N (gold, prominent) -->
+        <polygon points="50,50 44,22 50,5 56,22" fill="#c9a84c"/>
+        <!-- S -->
+        <polygon points="50,50 44,78 50,95 56,78" fill="#c9a84c" opacity="0.3"/>
+        <!-- E -->
+        <polygon points="50,50 78,44 95,50 78,56" fill="#c9a84c" opacity="0.3"/>
+        <!-- W -->
+        <polygon points="50,50 22,44 5,50 22,56" fill="#c9a84c" opacity="0.3"/>
+        <text x="50" y="2"  text-anchor="middle" fill="#c9a84c" font-size="7" font-family="Arial" font-weight="bold">N</text>
+        <text x="50" y="100" text-anchor="middle" fill="#c9a84c" font-size="6" font-family="Arial" opacity="0.5">S</text>
+        <text x="99" y="53" text-anchor="middle" fill="#c9a84c" font-size="6" font-family="Arial" opacity="0.5">E</text>
+        <text x="2"  y="53" text-anchor="middle" fill="#c9a84c" font-size="6" font-family="Arial" opacity="0.5">W</text>
+      </svg>
+    </div>
+
+    <h2>A Values-Dependent Verdict</h2>
+    <div class="divider"></div>
+    <p>
+      Whether libertarianism succeeds or fails as a philosophy and political project depends substantially on one's underlying values, empirical beliefs, and tolerance for risk — both the risks of state overreach and the risks of unchecked market outcomes.
+    </p>
+    <div class="pill-row">
+      <span class="pill">Values</span>
+      <span class="pill">Empirical Beliefs</span>
+      <span class="pill">Risk Tolerance</span>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<!-- NAV -->
+<div id="nav">
+  <button id="prev" onclick="go(-1)">← Prev</button>
+  <div class="dot-row" id="dots"></div>
+  <span id="counter">1 / 14</span>
+  <button id="next" onclick="go(1)">Next →</button>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const dotsEl  = document.getElementById('dots');
+  let cur = 0;
+
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' on' : '');
+    d.onclick = () => jump(i);
+    dotsEl.appendChild(d);
+  });
+
+  function show(idx) {
+    const prev = cur;
+    slides[prev].classList.remove('active');
+    slides[prev].classList.add('exit');
+    setTimeout(() => slides[prev].classList.remove('exit'), 450);
+    cur = idx;
+    slides[cur].classList.add('active');
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('on', i === cur));
+    document.getElementById('counter').textContent = `${cur + 1} / ${slides.length}`;
+    document.getElementById('prev').disabled = cur === 0;
+    document.getElementById('next').disabled = cur === slides.length - 1;
+  }
+
+  function go(dir)   { if (cur + dir >= 0 && cur + dir < slides.length) show(cur + dir); }
+  function jump(idx) { show(idx); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   go(-1);
+  });
+
+  document.getElementById('prev').disabled = true;
+</script>
+</body>
+</html>

@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Prisoner's Dilemma</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --teal:   #2ec4b6;
+      --dark:   #0d1117;
+      --mid:    #161b22;
+      --card:   #21262d;
+      --text:   #e6edf3;
+      --muted:  #7d8590;
+      --red:    #e05c3a;
+      --green:  #3fb950;
+      --blue:   #58a6ff;
+      --yellow: #d29922;
+    }
+
+    body {
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'Georgia', serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #deck { flex: 1; position: relative; overflow: hidden; }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 52px 80px;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity .4s ease, transform .4s ease;
+      pointer-events: none;
+    }
+    .slide.active  { opacity: 1; transform: translateX(0); pointer-events: auto; }
+    .slide.exit    { opacity: 0; transform: translateX(-60px); }
+
+    .art { position: absolute; pointer-events: none; z-index: 0; }
+    .art svg { width: 100%; height: 100%; }
+    .slide > *:not(.art) { position: relative; z-index: 1; }
+
+    /* ── title ── */
+    .slide-title {
+      background: radial-gradient(ellipse at 30% 45%, #0d2030 0%, var(--dark) 68%);
+      text-align: center;
+    }
+    .eyebrow {
+      font-family: 'Arial', sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: .28em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 22px;
+    }
+    .slide-title h1 {
+      font-size: clamp(2.2rem, 4.5vw, 3.8rem);
+      line-height: 1.12;
+      color: #fff;
+      max-width: 800px;
+    }
+    .slide-title h1 span { color: var(--teal); }
+    .subtitle {
+      margin-top: 26px;
+      font-size: 1.05rem;
+      color: var(--muted);
+      font-style: italic;
+      max-width: 600px;
+    }
+    .divider {
+      width: 56px; height: 3px;
+      background: var(--teal);
+      margin: 26px auto;
+      border-radius: 2px;
+    }
+
+    /* ── section ── */
+    .slide-section { background: var(--mid); }
+    .section-tag {
+      font-family: 'Arial', sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 14px;
+      align-self: flex-start;
+    }
+    .slide-section h2 {
+      font-size: clamp(1.5rem, 2.8vw, 2.4rem);
+      color: #fff;
+      align-self: flex-start;
+      line-height: 1.2;
+      margin-bottom: 34px;
+    }
+    .cards { display: grid; gap: 14px; width: 100%; }
+    .cards.cols-2 { grid-template-columns: 1fr 1fr; }
+    .cards.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .cards.cols-4 { grid-template-columns: repeat(4, 1fr); }
+    .card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 20px 22px;
+      border-top: 3px solid var(--teal);
+    }
+    .card.red   { border-top-color: var(--red); }
+    .card.green { border-top-color: var(--green); }
+    .card.blue  { border-top-color: var(--blue); }
+    .card.gold  { border-top-color: var(--yellow); }
+    .card h3 {
+      font-size: 0.9rem;
+      font-family: 'Arial', sans-serif;
+      font-weight: 700;
+      letter-spacing: .04em;
+      margin-bottom: 9px;
+      color: #fff;
+    }
+    .card p { font-size: 0.85rem; line-height: 1.6; color: var(--muted); }
+    .card p em { color: #ccc; font-style: italic; }
+    .card p strong { color: var(--text); }
+
+    /* ── payoff matrix slide ── */
+    .slide-matrix { background: var(--mid); }
+    .matrix-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+    .matrix-header-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 0;
+      margin-left: 130px;
+      width: calc(100% - 130px);
+      max-width: 600px;
+    }
+    .matrix-col-label {
+      flex: 1;
+      text-align: center;
+      font-family: 'Arial', sans-serif;
+      font-size: 0.8rem;
+      color: var(--teal);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding-bottom: 8px;
+    }
+    .matrix-body { display: flex; flex-direction: column; gap: 0; width: 100%; max-width: 730px; }
+    .matrix-row  { display: flex; align-items: stretch; }
+    .matrix-row-label {
+      width: 130px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 16px;
+      font-family: 'Arial', sans-serif;
+      font-size: 0.8rem;
+      color: var(--teal);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .matrix-cell {
+      flex: 1;
+      border: 1.5px solid #2d333b;
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 110px;
+    }
+    .matrix-cell:first-of-type { border-left: none; }
+    .matrix-cell.cc { background: rgba(63,185,80,.12); }
+    .matrix-cell.cd { background: rgba(224,92,58,.10); }
+    .matrix-cell.dc { background: rgba(224,92,58,.10); }
+    .matrix-cell.dd { background: rgba(100,100,100,.10); }
+    .cell-scores {
+      font-size: 1.6rem;
+      font-weight: bold;
+      font-family: 'Arial', sans-serif;
+      letter-spacing: .05em;
+    }
+    .cell-scores .a { color: var(--teal); }
+    .cell-scores .b { color: var(--blue); }
+    .cell-scores .sep { color: var(--muted); font-weight: 300; margin: 0 4px; }
+    .cell-label {
+      font-size: 0.7rem;
+      font-family: 'Arial', sans-serif;
+      color: var(--muted);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1.4;
+    }
+    .cell-label.good  { color: var(--green); }
+    .cell-label.bad   { color: var(--red); }
+    .cell-label.mixed { color: var(--yellow); }
+    .nash-badge {
+      display: inline-block;
+      background: var(--red);
+      color: #fff;
+      font-size: 0.6rem;
+      font-family: 'Arial', sans-serif;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-top: 4px;
+    }
+    .pareto-badge {
+      display: inline-block;
+      background: var(--green);
+      color: #fff;
+      font-size: 0.6rem;
+      font-family: 'Arial', sans-serif;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-top: 4px;
+    }
+    .matrix-legend {
+      display: flex;
+      gap: 20px;
+      font-family: 'Arial', sans-serif;
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 14px;
+    }
+    .matrix-legend span { display: flex; align-items: center; gap: 6px; }
+    .dot-teal  { width:10px;height:10px;border-radius:50%;background:var(--teal);  flex-shrink:0; }
+    .dot-blue  { width:10px;height:10px;border-radius:50%;background:var(--blue);  flex-shrink:0; }
+    .player-labels {
+      display: flex;
+      gap: 8px;
+      align-self: flex-start;
+      font-family: 'Arial', sans-serif;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .player-labels .pa { color: var(--teal); font-weight: bold; }
+    .player-labels .pb { color: var(--blue); font-weight: bold; }
+
+    /* ── quote ── */
+    .slide-quote {
+      background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+      flex-direction: row;
+      gap: 60px;
+      align-items: center;
+      justify-content: center;
+    }
+    .quote-body { flex: 1; max-width: 600px; }
+    blockquote {
+      font-size: clamp(1rem, 1.8vw, 1.4rem);
+      line-height: 1.7;
+      color: #d0d8e4;
+      font-style: italic;
+      position: relative;
+      padding-left: 8px;
+    }
+    blockquote::before {
+      content: '\201C';
+      font-size: 5.5rem;
+      color: var(--teal);
+      opacity: .18;
+      position: absolute;
+      top: -24px;
+      left: -14px;
+      line-height: 1;
+    }
+    .quote-source {
+      margin-top: 22px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-style: normal;
+      font-family: 'Arial', sans-serif;
+      letter-spacing: .1em;
+    }
+    .quote-art { flex-shrink: 0; width: 175px; height: 175px; opacity: 0.6; }
+    .quote-art svg { width: 100%; height: 100%; }
+
+    /* ── closing ── */
+    .slide-close {
+      background: radial-gradient(ellipse at 60% 55%, #0d2030 0%, var(--dark) 68%);
+      text-align: center;
+    }
+    .slide-close h2 { font-size: clamp(1.6rem, 3vw, 2.6rem); color: #fff; margin-bottom: 18px; }
+    .slide-close p  { max-width: 660px; font-size: 1rem; line-height: 1.75; color: var(--muted); }
+    .pill-row { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; justify-content: center; }
+    .pill {
+      border: 1.5px solid var(--teal);
+      border-radius: 999px;
+      padding: 7px 20px;
+      font-size: 0.8rem;
+      font-family: 'Arial', sans-serif;
+      color: var(--teal);
+      letter-spacing: .06em;
+    }
+
+    /* ── strategy comparison table ── */
+    .strat-table { width: 100%; border-collapse: collapse; font-family: 'Arial', sans-serif; font-size: 0.82rem; }
+    .strat-table th {
+      text-align: left;
+      padding: 10px 14px;
+      background: #2d333b;
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .strat-table td { padding: 11px 14px; border-bottom: 1px solid #21262d; color: var(--text); vertical-align: top; }
+    .strat-table tr:last-child td { border-bottom: none; }
+    .strat-table tr:hover td { background: rgba(255,255,255,.03); }
+    .strat-name { font-weight: 700; color: #fff; display: block; margin-bottom: 3px; }
+    .tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-family: 'Arial', sans-serif;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-right: 4px;
+    }
+    .tag.win  { background: rgba(63,185,80,.2);  color: var(--green); }
+    .tag.lose { background: rgba(224,92,58,.2);  color: var(--red);   }
+    .tag.mid  { background: rgba(88,166,255,.2); color: var(--blue);  }
+
+    /* ── nav ── */
+    #nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 16px 40px;
+      background: var(--mid);
+      border-top: 1px solid #21262d;
+    }
+    #nav button {
+      background: none;
+      border: 1.5px solid #30363d;
+      color: var(--text);
+      padding: 7px 26px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-family: 'Arial', sans-serif;
+      transition: border-color .2s, color .2s;
+    }
+    #nav button:hover:not(:disabled) { border-color: var(--teal); color: var(--teal); }
+    #nav button:disabled { opacity: .3; cursor: default; }
+    #counter { font-family:'Arial',sans-serif; font-size:0.75rem; color:var(--muted); min-width:60px; text-align:center; }
+    .dot-row { display:flex; gap:6px; }
+    .dot { width:6px; height:6px; border-radius:50%; background:#30363d; transition:background .3s; }
+    .dot.on { background: var(--teal); }
+  </style>
+</head>
+<body>
+<div id="deck">
+
+  <!-- ══════════════════════════════════════════
+       1 · TITLE
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-title active">
+
+    <!-- Two prison cells -->
+    <div class="art" style="right:60px;top:50%;transform:translateY(-50%);width:260px;height:300px;opacity:0.28;">
+      <svg viewBox="0 0 100 120" fill="none">
+        <!-- left cell -->
+        <rect x="4" y="20" width="40" height="85" rx="2" stroke="#2ec4b6" stroke-width="1.5"/>
+        <!-- left bars -->
+        <line x1="14" y1="20" x2="14" y2="105" stroke="#2ec4b6" stroke-width="1.2"/>
+        <line x1="24" y1="20" x2="24" y2="105" stroke="#2ec4b6" stroke-width="1.2"/>
+        <line x1="34" y1="20" x2="34" y2="105" stroke="#2ec4b6" stroke-width="1.2"/>
+        <!-- left figure -->
+        <circle cx="24" cy="48" r="7" stroke="#2ec4b6" stroke-width="1.5"/>
+        <line x1="24" y1="55" x2="24" y2="75" stroke="#2ec4b6" stroke-width="1.5"/>
+        <line x1="16" y1="63" x2="32" y2="63" stroke="#2ec4b6" stroke-width="1.5"/>
+        <line x1="24" y1="75" x2="17" y2="90" stroke="#2ec4b6" stroke-width="1.5"/>
+        <line x1="24" y1="75" x2="31" y2="90" stroke="#2ec4b6" stroke-width="1.5"/>
+        <!-- right cell -->
+        <rect x="56" y="20" width="40" height="85" rx="2" stroke="#58a6ff" stroke-width="1.5"/>
+        <!-- right bars -->
+        <line x1="66" y1="20" x2="66" y2="105" stroke="#58a6ff" stroke-width="1.2"/>
+        <line x1="76" y1="20" x2="76" y2="105" stroke="#58a6ff" stroke-width="1.2"/>
+        <line x1="86" y1="20" x2="86" y2="105" stroke="#58a6ff" stroke-width="1.2"/>
+        <!-- right figure -->
+        <circle cx="76" cy="48" r="7" stroke="#58a6ff" stroke-width="1.5"/>
+        <line x1="76" y1="55" x2="76" y2="75" stroke="#58a6ff" stroke-width="1.5"/>
+        <line x1="68" y1="63" x2="84" y2="63" stroke="#58a6ff" stroke-width="1.5"/>
+        <line x1="76" y1="75" x2="69" y2="90" stroke="#58a6ff" stroke-width="1.5"/>
+        <line x1="76" y1="75" x2="83" y2="90" stroke="#58a6ff" stroke-width="1.5"/>
+        <!-- question marks between cells -->
+        <text x="50" y="58" text-anchor="middle" fill="#7d8590" font-size="14" font-family="Georgia" font-style="italic">?</text>
+        <!-- wall divider -->
+        <line x1="48" y1="15" x2="48" y2="110" stroke="#30363d" stroke-width="4"/>
+      </svg>
+    </div>
+
+    <p class="eyebrow">Game Theory</p>
+    <h1>The <span>Prisoner's</span> Dilemma</h1>
+    <div class="divider"></div>
+    <p class="subtitle">Why individually rational choices produce collectively irrational outcomes</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       2 · THE SETUP
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- handcuffs watermark -->
+    <div class="art" style="right:-40px;bottom:-40px;width:360px;height:260px;opacity:0.06;">
+      <svg viewBox="0 0 120 80" fill="none" stroke="#2ec4b6">
+        <circle cx="35" cy="40" r="22" stroke-width="2.5"/>
+        <circle cx="35" cy="40" r="13" stroke-width="2"/>
+        <circle cx="85" cy="40" r="22" stroke-width="2.5"/>
+        <circle cx="85" cy="40" r="13" stroke-width="2"/>
+        <line x1="48" y1="40" x2="72" y2="40" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <p class="section-tag">The Scenario</p>
+    <h2>Two Suspects, Two Choices</h2>
+    <div class="cards cols-2">
+      <div class="card">
+        <h3>The Situation</h3>
+        <p>Two criminals are arrested and held in <em>separate cells</em>. Police have enough evidence for a minor charge, but need a confession to convict on the major offense.</p>
+      </div>
+      <div class="card red">
+        <h3>No Communication</h3>
+        <p>The prisoners <em>cannot talk to each other</em>. Each must decide independently — with no knowledge of what the other will choose.</p>
+      </div>
+      <div class="card green">
+        <h3>Cooperate (Stay Silent)</h3>
+        <p>A prisoner who stays silent <em>protects</em> the other. If both stay silent, both get a light sentence. Loyalty benefits both.</p>
+      </div>
+      <div class="card red">
+        <h3>Defect (Betray)</h3>
+        <p>A prisoner who betrays <em>implicates</em> the other. The betrayer may walk free — but if both betray, both suffer a heavy sentence.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       3 · PAYOFF MATRIX
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-matrix">
+    <p class="section-tag">The Payoff Matrix</p>
+    <h2 style="align-self:flex-start;color:#fff;font-size:clamp(1.4rem,2.5vw,2.2rem);margin-bottom:20px;">Four Possible Outcomes</h2>
+
+    <div class="player-labels">
+      <span>Scores: </span>
+      <span class="pa">A (row)</span>
+      <span style="color:var(--muted)"> / </span>
+      <span class="pb">B (column)</span>
+      <span style="color:var(--muted)"> — higher is better</span>
+    </div>
+
+    <div class="matrix-wrap">
+      <div style="display:flex;align-items:flex-end;width:100%;max-width:730px;">
+        <div style="width:130px;flex-shrink:0;"></div>
+        <div style="flex:1;display:flex;font-family:Arial,sans-serif;font-size:0.78rem;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;padding-bottom:8px;">
+          <div style="flex:1;text-align:center;">B: Cooperate</div>
+          <div style="flex:1;text-align:center;">B: Defect</div>
+        </div>
+      </div>
+
+      <div class="matrix-body">
+        <!-- Row 1: A cooperates -->
+        <div class="matrix-row">
+          <div class="matrix-row-label" style="color:var(--teal);">A: Cooperate</div>
+          <div class="matrix-cell cc">
+            <div class="cell-scores">
+              <span class="a">3</span><span class="sep">/</span><span class="b">3</span>
+            </div>
+            <div class="cell-label good">Mutual Reward</div>
+            <span class="pareto-badge">Pareto Optimal</span>
+          </div>
+          <div class="matrix-cell cd">
+            <div class="cell-scores">
+              <span class="a">0</span><span class="sep">/</span><span class="b">5</span>
+            </div>
+            <div class="cell-label mixed">Sucker / Temptation</div>
+          </div>
+        </div>
+        <!-- Row 2: A defects -->
+        <div class="matrix-row">
+          <div class="matrix-row-label" style="color:var(--teal);">A: Defect</div>
+          <div class="matrix-cell dc">
+            <div class="cell-scores">
+              <span class="a">5</span><span class="sep">/</span><span class="b">0</span>
+            </div>
+            <div class="cell-label mixed">Temptation / Sucker</div>
+          </div>
+          <div class="matrix-cell dd">
+            <div class="cell-scores">
+              <span class="a">1</span><span class="sep">/</span><span class="b">1</span>
+            </div>
+            <div class="cell-label bad">Mutual Punishment</div>
+            <span class="nash-badge">Nash Equilibrium</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="matrix-legend">
+        <span><div class="dot-teal"></div> Prisoner A's score</span>
+        <span><div class="dot-blue"></div> Prisoner B's score</span>
+        <span style="color:var(--green);">■ Pareto optimal — best collective outcome</span>
+        <span style="color:var(--red);">■ Nash equilibrium — stable but suboptimal</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       4 · DOMINANT STRATEGY
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- Decision tree watermark -->
+    <div class="art" style="right:-20px;top:50%;transform:translateY(-50%);width:340px;height:340px;opacity:0.06;">
+      <svg viewBox="0 0 100 100" fill="none" stroke="#2ec4b6">
+        <circle cx="50" cy="15" r="8" stroke-width="1.5"/>
+        <line x1="42" y1="20" x2="28" y2="42" stroke-width="1.5"/>
+        <line x1="58" y1="20" x2="72" y2="42" stroke-width="1.5"/>
+        <circle cx="28" cy="48" r="7" stroke-width="1.5"/>
+        <circle cx="72" cy="48" r="7" stroke-width="1.5"/>
+        <line x1="22" y1="53" x2="14" y2="72" stroke-width="1.5"/>
+        <line x1="34" y1="53" x2="42" y2="72" stroke-width="1.5"/>
+        <line x1="66" y1="53" x2="58" y2="72" stroke-width="1.5"/>
+        <line x1="78" y1="53" x2="86" y2="72" stroke-width="1.5"/>
+        <circle cx="14" cy="76" r="5" fill="#e05c3a" stroke="none"/>
+        <circle cx="42" cy="76" r="5" fill="#e05c3a" stroke="none"/>
+        <circle cx="58" cy="76" r="5" fill="#e05c3a" stroke="none"/>
+        <circle cx="86" cy="76" r="5" fill="#e05c3a" stroke="none"/>
+      </svg>
+    </div>
+
+    <p class="section-tag">The Logic</p>
+    <h2>Defect is Always the "Better" Move</h2>
+    <div class="cards cols-2">
+      <div class="card red">
+        <h3>If B Cooperates…</h3>
+        <p>A gets <strong>3 points</strong> for cooperating — but <strong>5 points</strong> for defecting.<br/><em>→ A should defect.</em></p>
+      </div>
+      <div class="card red">
+        <h3>If B Defects…</h3>
+        <p>A gets <strong>0 points</strong> for cooperating — but <strong>1 point</strong> for defecting.<br/><em>→ A should defect.</em></p>
+      </div>
+      <div class="card" style="grid-column:1/-1;border-top-color:var(--yellow);">
+        <h3>The Dominant Strategy</h3>
+        <p>Regardless of what B does, A is always better off defecting. By symmetry, so is B. This makes <em>Defect</em> a <strong>dominant strategy</strong> for both players — the individually rational choice no matter what the opponent does.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       5 · NASH EQUILIBRIUM
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- Trap / equilibrium trap watermark -->
+    <div class="art" style="left:50%;top:50%;transform:translate(-50%,-50%);width:440px;height:440px;opacity:0.05;">
+      <svg viewBox="0 0 100 100" fill="none" stroke="#e05c3a">
+        <circle cx="50" cy="50" r="44" stroke-width="1.5"/>
+        <circle cx="50" cy="50" r="30" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <circle cx="50" cy="50" r="15" stroke-width="2"/>
+        <line x1="50" y1="6"  x2="50" y2="35" stroke-width="1"/>
+        <line x1="50" y1="65" x2="50" y2="94" stroke-width="1"/>
+        <line x1="6"  y1="50" x2="35" y2="50" stroke-width="1"/>
+        <line x1="65" y1="50" x2="94" y2="50" stroke-width="1"/>
+      </svg>
+    </div>
+
+    <p class="section-tag">Game Theory</p>
+    <h2>Stable, Yet Suboptimal</h2>
+    <div class="cards cols-3">
+      <div class="card red">
+        <h3>What is Nash Equilibrium?</h3>
+        <p>A state where <em>no player can improve their outcome by changing their strategy alone</em>. Given that the other defects, defecting is the best response — so neither has reason to switch.</p>
+      </div>
+      <div class="card red">
+        <h3>The Trap</h3>
+        <p>Both players end up at <strong>(Defect, Defect) → (1, 1)</strong>. Each is rational, yet both are worse off than if they had both cooperated and earned <strong>(3, 3)</strong>.</p>
+      </div>
+      <div class="card green">
+        <h3>Pareto Optimum</h3>
+        <p><em>"Pareto optimal"</em> means no one can be made better off without making someone else worse off. <strong>(Cooperate, Cooperate)</strong> is Pareto optimal — but it isn't stable without enforcement or trust.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       6 · QUOTE
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-quote">
+    <div class="quote-body">
+      <blockquote>
+        The tragedy of the dilemma is not that people are selfish — it is that even people who <em>want</em> to cooperate are systematically driven toward outcomes they don't want, by the very structure of the game itself.
+      </blockquote>
+      <p class="quote-source">— Game Theory Principle</p>
+    </div>
+    <!-- Two arrows diverging -->
+    <div class="quote-art">
+      <svg viewBox="0 0 100 100" fill="none">
+        <!-- two figures at center -->
+        <circle cx="50" cy="50" r="6" stroke="#2ec4b6" stroke-width="2"/>
+        <!-- arrows pulling apart -->
+        <line x1="44" y1="50" x2="14" y2="30" stroke="#e05c3a" stroke-width="2.5" stroke-linecap="round"/>
+        <polyline points="20,24 12,30 20,36" stroke="#e05c3a" stroke-width="2" fill="none"/>
+        <line x1="56" y1="50" x2="86" y2="30" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+        <polyline points="80,24 88,30 80,36" stroke="#58a6ff" stroke-width="2" fill="none"/>
+        <!-- dashed line showing preferred (cooperative) outcome -->
+        <line x1="44" y1="50" x2="14" y2="70" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="3,3" stroke-linecap="round"/>
+        <line x1="56" y1="50" x2="86" y2="70" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="3,3" stroke-linecap="round"/>
+        <text x="50" y="90" text-anchor="middle" font-family="Arial" font-size="6" fill="#3fb950">preferred path</text>
+        <text x="14" y="22" text-anchor="middle" font-family="Arial" font-size="6" fill="#7d8590">actual</text>
+        <text x="86" y="22" text-anchor="middle" font-family="Arial" font-size="6" fill="#7d8590">actual</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       7 · REAL-WORLD EXAMPLES
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- Globe / network watermark -->
+    <div class="art" style="right:-50px;top:50%;transform:translateY(-50%);width:380px;height:380px;opacity:0.06;">
+      <svg viewBox="0 0 100 100" fill="none" stroke="#2ec4b6">
+        <circle cx="50" cy="50" r="44" stroke-width="1.5"/>
+        <ellipse cx="50" cy="50" rx="22" ry="44" stroke-width="1"/>
+        <line x1="6" y1="50" x2="94" y2="50" stroke-width="1"/>
+        <path d="M6,30 Q50,22 94,30" stroke-width="0.8"/>
+        <path d="M6,70 Q50,78 94,70" stroke-width="0.8"/>
+        <!-- nodes -->
+        <circle cx="26" cy="36" r="4" fill="#2ec4b6" stroke="none"/>
+        <circle cx="74" cy="36" r="4" fill="#2ec4b6" stroke="none"/>
+        <circle cx="26" cy="64" r="4" fill="#e05c3a" stroke="none"/>
+        <circle cx="74" cy="64" r="4" fill="#e05c3a" stroke="none"/>
+        <line x1="26" y1="36" x2="74" y2="64" stroke-width="1" stroke-dasharray="3,2"/>
+        <line x1="74" y1="36" x2="26" y2="64" stroke-width="1" stroke-dasharray="3,2"/>
+      </svg>
+    </div>
+
+    <p class="section-tag">Applications</p>
+    <h2>The Dilemma Is Everywhere</h2>
+    <div class="cards cols-3">
+      <div class="card red">
+        <h3>🚀 Arms Races</h3>
+        <p>Two nations each prefer <em>mutual disarmament</em>, but defecting (arming up) dominates no matter what the rival does. Both end up in costly arms races neither wants.</p>
+      </div>
+      <div class="card red">
+        <h3>🌍 Climate Change</h3>
+        <p>Every nation benefits if all reduce emissions, but each is better off <em>free-riding</em> on others' sacrifices. The rational move for each produces a catastrophic collective outcome.</p>
+      </div>
+      <div class="card">
+        <h3>🏭 Price Wars</h3>
+        <p>Competing firms both profit from high prices, but each gains by undercutting the other. Both defect, prices crash, and both earn less than if they had held the line.</p>
+      </div>
+      <div class="card">
+        <h3>🚴 Doping in Sport</h3>
+        <p>Athletes prefer a clean field, but if others dope, the clean athlete loses; if others don't, doping wins anyway. The dominant strategy is to dope — and everyone suffers.</p>
+      </div>
+      <div class="card gold">
+        <h3>🏘️ Free-Rider Problem</h3>
+        <p>Public goods (clean parks, open-source software) are enjoyed by all but contributed to by few. Each individual's rational choice is to take without giving — degrading the shared resource.</p>
+      </div>
+      <div class="card blue">
+        <h3>🏭 Externalities</h3>
+        <p>Firms that pollute impose costs on others without bearing them. Each firm's rational strategy is to externalize costs — producing outcomes society as a whole would reject.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       8 · THE ITERATED GAME
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- Repeating cycle watermark -->
+    <div class="art" style="right:-30px;top:50%;transform:translateY(-50%);width:340px;height:280px;opacity:0.07;">
+      <svg viewBox="0 0 100 80" fill="none" stroke="#2ec4b6">
+        <!-- circular arrows suggesting iteration -->
+        <path d="M50,10 A32,32 0 1,1 18,50" stroke-width="2" stroke-linecap="round"/>
+        <polyline points="10,44 18,52 26,44" stroke-width="2" fill="none"/>
+        <!-- round markers -->
+        <circle cx="50" cy="10" r="4" fill="#2ec4b6" stroke="none"/>
+        <circle cx="82" cy="50" r="4" fill="#2ec4b6" stroke="none"/>
+        <circle cx="50" cy="70" r="4" fill="#3fb950" stroke="none"/>
+        <circle cx="18" cy="50" r="4" fill="#3fb950" stroke="none"/>
+        <text x="57" y="14" fill="#2ec4b6" font-size="7" font-family="Arial">R1</text>
+        <text x="86" y="54" fill="#2ec4b6" font-size="7" font-family="Arial">R2</text>
+        <text x="54" y="76" fill="#3fb950" font-size="7" font-family="Arial">R3</text>
+        <text x="1"  y="54" fill="#3fb950" font-size="7" font-family="Arial">R4</text>
+      </svg>
+    </div>
+
+    <p class="section-tag">The Iterated Game</p>
+    <h2>When the Game Repeats, Everything Changes</h2>
+    <div class="cards cols-3">
+      <div class="card green">
+        <h3>The Shadow of the Future</h3>
+        <p>When players expect to interact <em>again</em>, the value of long-term cooperation outweighs short-term defection. Reputation becomes a resource worth protecting.</p>
+      </div>
+      <div class="card green">
+        <h3>Reciprocity Emerges</h3>
+        <p>In Robert Axelrod's famous tournaments, strategies that <em>started cooperative and retaliated when betrayed</em> consistently outperformed always-defect strategies over many rounds.</p>
+      </div>
+      <div class="card">
+        <h3>The Catch</h3>
+        <p>Cooperation is fragile. A known <em>last round</em> unravels everything — both players defect in the final round, which makes the second-to-last round a de facto last round, and so on back to the start.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       9 · STRATEGIES
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <div class="art" style="right:-20px;bottom:-20px;width:300px;height:220px;opacity:0.06;">
+      <svg viewBox="0 0 100 70" fill="none">
+        <!-- simple bar chart -->
+        <line x1="10" y1="5" x2="10" y2="60" stroke="#2ec4b6" stroke-width="1.5"/>
+        <line x1="10" y1="60" x2="95" y2="60" stroke="#2ec4b6" stroke-width="1.5"/>
+        <rect x="16" y="18" width="14" height="42" fill="#3fb950" rx="1"/>
+        <rect x="36" y="30" width="14" height="30" fill="#2ec4b6" rx="1"/>
+        <rect x="56" y="40" width="14" height="20" fill="#d29922" rx="1"/>
+        <rect x="76" y="52" width="14" height="8"  fill="#e05c3a" rx="1"/>
+      </svg>
+    </div>
+
+    <p class="section-tag">Strategies</p>
+    <h2>What Actually Works?</h2>
+    <table class="strat-table">
+      <thead>
+        <tr>
+          <th style="width:22%">Strategy</th>
+          <th style="width:40%">Description</th>
+          <th style="width:20%">Properties</th>
+          <th style="width:18%">Performance</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="strat-name">Tit-for-Tat</span>Cooperate first; copy opponent's last move</td>
+          <td>Start friendly, retaliate once when betrayed, forgive immediately after</td>
+          <td><span class="tag win">Nice</span><span class="tag win">Clear</span><span class="tag win">Forgiving</span></td>
+          <td style="color:var(--green);font-family:Arial;font-weight:700;">🏆 Axelrod winner</td>
+        </tr>
+        <tr>
+          <td><span class="strat-name">Grim Trigger</span>Cooperate until betrayed; defect forever after</td>
+          <td>Maximum punishment — one betrayal ends cooperation permanently</td>
+          <td><span class="tag win">Nice</span><span class="tag lose">Unforgiving</span></td>
+          <td style="color:var(--muted);font-family:Arial;">Good but brittle</td>
+        </tr>
+        <tr>
+          <td><span class="strat-name">Always Defect</span>Defect every round regardless</td>
+          <td>Pure exploitation — wins against naive cooperators, loses long-run</td>
+          <td><span class="tag lose">Nasty</span></td>
+          <td style="color:var(--red);font-family:Arial;font-weight:600;">Poor long-run</td>
+        </tr>
+        <tr>
+          <td><span class="strat-name">Always Cooperate</span>Cooperate every round regardless</td>
+          <td>Maximally exploitable — collapses against defectors</td>
+          <td><span class="tag mid">Naive</span></td>
+          <td style="color:var(--red);font-family:Arial;font-weight:600;">Exploited easily</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       10 · IMPLICATIONS — WHY INSTITUTIONS MATTER
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-section">
+
+    <!-- Pillars / institution watermark -->
+    <div class="art" style="left:50%;top:50%;transform:translate(-50%,-50%);width:480px;height:360px;opacity:0.06;">
+      <svg viewBox="0 0 120 90" fill="none" stroke="#2ec4b6">
+        <!-- roof -->
+        <polygon points="60,5 5,28 115,28" stroke-width="2" fill="none"/>
+        <!-- pillars -->
+        <rect x="18" y="28" width="10" height="52" stroke-width="1.5"/>
+        <rect x="38" y="28" width="10" height="52" stroke-width="1.5"/>
+        <rect x="58" y="28" width="10" height="52" stroke-width="1.5"/>
+        <rect x="78" y="28" width="10" height="52" stroke-width="1.5"/>
+        <rect x="98" y="28" width="10" height="52" stroke-width="1.5"/>
+        <!-- base -->
+        <line x1="5" y1="80" x2="115" y2="80" stroke-width="2.5"/>
+      </svg>
+    </div>
+
+    <p class="section-tag">Implications</p>
+    <h2>Escaping the Trap</h2>
+    <div class="cards cols-3">
+      <div class="card green">
+        <h3>Laws &amp; Enforcement</h3>
+        <p>External punishment changes the payoff structure. If defection is fined, cooperation becomes individually rational — the game itself is altered.</p>
+      </div>
+      <div class="card green">
+        <h3>Reputation &amp; Trust</h3>
+        <p>In repeated interactions, a reputation for cooperation is valuable. Players invest in trustworthiness because the long-run return exceeds short-run gains from betrayal.</p>
+      </div>
+      <div class="card green">
+        <h3>Communication</h3>
+        <p>Allowing prisoners to talk often breaks the dilemma entirely. Cheap talk, credible commitment devices, and contracts let players coordinate on the Pareto outcome.</p>
+      </div>
+      <div class="card">
+        <h3>Small Groups</h3>
+        <p>Defection is easier to sustain anonymously. Smaller, tighter communities with social monitoring make defection visible and costly — organically incentivizing cooperation.</p>
+      </div>
+      <div class="card blue">
+        <h3>Norms &amp; Culture</h3>
+        <p>Internalized values of fairness, reciprocity, and loyalty change the perceived payoffs — players feel intrinsic costs from defection that aren't captured by the raw matrix.</p>
+      </div>
+      <div class="card gold">
+        <h3>Market Design</h3>
+        <p>Taxes on negative externalities (Pigouvian taxes), tradeable permits, and subsidies for positive externalities realign private and social incentives — solving the dilemma through mechanism design.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       11 · CONCLUSION
+  ══════════════════════════════════════════ -->
+  <div class="slide slide-close">
+
+    <!-- Two hands meeting -->
+    <div class="art" style="left:50%;top:50%;transform:translate(-50%,-50%);width:380px;height:380px;opacity:0.08;">
+      <svg viewBox="0 0 100 100" fill="none">
+        <!-- left hand reaching right -->
+        <path d="M5,50 Q20,30 40,48 Q50,54 50,50" stroke="#2ec4b6" stroke-width="3" stroke-linecap="round" fill="none"/>
+        <!-- right hand reaching left -->
+        <path d="M95,50 Q80,30 60,48 Q50,54 50,50" stroke="#58a6ff" stroke-width="3" stroke-linecap="round" fill="none"/>
+        <!-- meeting point glow -->
+        <circle cx="50" cy="50" r="8" stroke="#3fb950" stroke-width="2" fill="none"/>
+        <circle cx="50" cy="50" r="14" stroke="#3fb950" stroke-width="1" fill="none" opacity="0.5"/>
+        <circle cx="50" cy="50" r="20" stroke="#3fb950" stroke-width="0.8" fill="none" opacity="0.3"/>
+        <!-- fingers left -->
+        <line x1="38" y1="45" x2="32" y2="36" stroke="#2ec4b6" stroke-width="2" stroke-linecap="round"/>
+        <line x1="42" y1="44" x2="38" y2="34" stroke="#2ec4b6" stroke-width="2" stroke-linecap="round"/>
+        <line x1="46" y1="45" x2="44" y2="35" stroke="#2ec4b6" stroke-width="2" stroke-linecap="round"/>
+        <!-- fingers right -->
+        <line x1="62" y1="45" x2="68" y2="36" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+        <line x1="58" y1="44" x2="62" y2="34" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+        <line x1="54" y1="45" x2="56" y2="35" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <h2>Rational Individuals, Collective Solutions</h2>
+    <div class="divider"></div>
+    <p>
+      The prisoner's dilemma reveals a deep tension at the heart of social life: individually rational behavior can produce collectively irrational outcomes. The solution isn't to make people less rational — it's to design institutions, norms, and incentive structures that make cooperation the rational choice.
+    </p>
+    <div class="pill-row">
+      <span class="pill">Iteration</span>
+      <span class="pill">Trust</span>
+      <span class="pill">Institutions</span>
+      <span class="pill">Mechanism Design</span>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<div id="nav">
+  <button id="prev" onclick="go(-1)">← Prev</button>
+  <div class="dot-row" id="dots"></div>
+  <span id="counter">1 / 11</span>
+  <button id="next" onclick="go(1)">Next →</button>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const dotsEl  = document.getElementById('dots');
+  let cur = 0;
+
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' on' : '');
+    d.onclick = () => jump(i);
+    dotsEl.appendChild(d);
+  });
+
+  function show(idx) {
+    const prev = cur;
+    slides[prev].classList.remove('active');
+    slides[prev].classList.add('exit');
+    setTimeout(() => slides[prev].classList.remove('exit'), 400);
+    cur = idx;
+    slides[cur].classList.add('active');
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('on', i === cur));
+    document.getElementById('counter').textContent = `${cur + 1} / ${slides.length}`;
+    document.getElementById('prev').disabled = cur === 0;
+    document.getElementById('next').disabled = cur === slides.length - 1;
+  }
+
+  function go(dir)   { if (cur + dir >= 0 && cur + dir < slides.length) show(cur + dir); }
+  function jump(idx) { show(idx); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   go(-1);
+  });
+
+  document.getElementById('prev').disabled = true;
+</script>
+</body>
+</html>
